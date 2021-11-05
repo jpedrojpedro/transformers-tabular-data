@@ -1,0 +1,5 @@
+pandas==1.3.4
+pytorch==1.8.0
+pytorch-lightning==1.5.0
+skicit-learn==1.0.1
+transformers==4.12.3
