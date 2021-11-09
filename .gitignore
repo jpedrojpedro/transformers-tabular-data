@@ -1,8 +1,6 @@
-<<<<<<< HEAD
 dl_final_task/
-=======
 # Byte-compiled / optimized / DLL files
->>>>>>> 9f56951844f1cd1418131aea2e6161b02f5806a2
+
 __pycache__/
 *.py[cod]
 *$py.class
