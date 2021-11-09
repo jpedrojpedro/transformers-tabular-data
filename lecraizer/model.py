@@ -105,6 +105,3 @@ class TabularToTextDM(pl.LightningDataModule):
     
 data_module = TabularToTextDM(train_encodings, y_train, test_encodings, y_test)
 data_module.train_dataloader()
-
-
-
