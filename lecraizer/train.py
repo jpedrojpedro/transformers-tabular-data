@@ -7,7 +7,6 @@ from transformers import DistilBertForSequenceClassification
 MODEL_NAME = 'distilbert-base-uncased-finetuned-sst-2-english'
 
 
-
 class DistilBertTabular(pl.LightningModule):
     def __init__(self, num_classes):
         super().__init__()
