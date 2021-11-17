@@ -4,6 +4,7 @@ from torch import optim
 import torchmetrics as tm
 import pytorch_lightning as pl
 from transformers import DistilBertForSequenceClassification
+
 MODEL_NAME = 'distilbert-base-uncased-finetuned-sst-2-english'
 
 
@@ -13,6 +14,7 @@ class DistilBertTabular(pl.LightningModule):
         self.model = DistilBertForSequenceClassification.from_pretrained(MODEL_NAME)
         self.model.classifier = nn.Linear(768, num_classes)
         self.model.dropout = nn.Identity()
+        
         self.train_acc = tm.Accuracy()
         self.val_acc = tm.Accuracy()
         self.loss_fn = nn.CrossEntropyLoss()
