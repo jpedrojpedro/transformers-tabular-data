@@ -13,7 +13,7 @@ class Loader:
 
     def join_columns(self, row):
         final = []
-        for col in self.df.columns[:4]:
+        for col in self.df.columns[:-1]:
             aux = []
             aux.append(col)
             aux.append(str(row[col]))
@@ -21,22 +21,38 @@ class Loader:
         return ', '.join(final)
     
     
-    def load_pd_iris(self):
+    def load_sklearn_dataset(self):
         '''
-        Load iris dataset
+        Load dataset from sklearn
         '''
-        self.iris = datasets.load_iris()
+        self.dataset = datasets.load_iris()
+#         self.dataset = datasets.load_wine()
         
-        df = pd.DataFrame(data=self.iris.data, columns=self.iris.feature_names)
-        df['target'] = self.iris.target
+        df = pd.DataFrame(data=self.dataset.data, columns=self.dataset.feature_names)
+        df['target'] = self.dataset.target
         return df
+    
+    
+    def load_local_dataset(self):
+        '''
+        Load dataset from local folder
+        '''
+        self.dataset = pd.read_csv('../text/datasets/car.csv')
+        print(len(self.dataset))
+        
+        
+        df = pd.DataFrame(data=self.dataset.data, columns=self.dataset.feature_names)
+        df['target'] = self.dataset.target
+        return df
+
 
     
     def data_to_text(self):
         '''
         Transform tabular data to text, row-wise
         '''
-        self.df = self.load_pd_iris()
+        self.df = self.load_sklearn_dataset()
+#         self.df = self.load_local_dataset()
         self.df['text'] = self.df.apply(self.join_columns, axis=1)
         df_text = self.df[['text', 'target']].copy()
         

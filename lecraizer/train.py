@@ -30,7 +30,7 @@ class DistilBertTabular(pl.LightningModule):
         keys = batch.keys()
         instance = {}
         for key in keys:
-              instance[key] = torch.stack(batch[key], dim=0).transpose(1, 0).cuda()
+            instance[key] = torch.stack(batch[key], dim=0).transpose(1, 0).cuda()
         pred = self.forward(**instance)
         loss_value = self.loss_fn(pred, labels)
         acc = self.train_acc(pred, labels)
