@@ -142,5 +142,15 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# PyCharm
+# PyCharm + Pipenv/PyEnv
 .idea
+.python-version
+Pipfile
+Pipfile.lock
+
+# Logs
+**/lightning_logs/
+
+# datasets
+**/datasets/**
+!**/datasets/.keep
