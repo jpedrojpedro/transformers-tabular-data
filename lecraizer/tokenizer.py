@@ -3,7 +3,14 @@ import pytorch_lightning as pl
 from torch.utils.data import Dataset, DataLoader
 
 from transformers import DistilBertTokenizer
-MODEL_NAME = 'distilbert-base-uncased-finetuned-sst-2-english'  # This model is a fine-tune checkpoint of DistilBERT-base-uncased, fine-tuned on SST-2.
+from transformers import AutoTokenizer
+# MODEL_NAME = 'distilbert-base-uncased-finetuned-sst-2-english'  # This model is a fine-tune checkpoint of DistilBERT-base-uncased, fine-tuned on SST-2.
+
+
+# MODEL_NAME = 'bigscience/T0pp'
+MODEL_NAME = 'bigscience/T0_3B'
+
+
 
 
 class TabularToTextDataset(Dataset):
@@ -30,7 +37,8 @@ class TabularToTextDM(pl.LightningDataModule):
         self.y_train = y_train 
         self.X_test = X_test
         self.y_test = y_test
-        self.tokenizer = DistilBertTokenizer.from_pretrained(MODEL_NAME) # define a tokenizer object
+#         self.tokenizer = DistilBertTokenizer.from_pretrained(MODEL_NAME) # define a tokenizer object
+        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
     def train_dataloader(self):
         train_encodings = self.tokenize_train()

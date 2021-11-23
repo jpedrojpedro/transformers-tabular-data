@@ -2,7 +2,7 @@ import pytorch_lightning as pl
 
 from loader import Loader
 from tokenizer import TabularToTextDM
-from train import DistilBertTabular
+from train import DistilBertTabular, T0ppTabular
 
 
 if __name__ == '__main__':
@@ -18,8 +18,12 @@ if __name__ == '__main__':
 
     # Load model
     num_classes = len(set(y_train))
-    model = DistilBertTabular(num_classes)
-    model = model.cuda()
+#     model = DistilBertTabular(num_classes)
+    model = T0ppTabular(num_classes)
+#     model = model.cuda()
+    model = model.cpu()
+    
+    print(model)
     
     
 #     # freezing layers
@@ -27,43 +31,21 @@ if __name__ == '__main__':
 #         if i < 102:
 
 
-    for name, param in model.named_parameters():
-        if 'layer_norm' in name:
-            param.requires_grad = True
-        else:
-            param.requires_grad = False
+#     for name, param in model.named_parameters():
+#         if 'layer_norm' in name:
+#             param.requires_grad = True
+#         else:
+#             param.requires_grad = False
                    
                               
-    for name, param in model.named_parameters():
-        print(name)
-        print(param.requires_grad)
-        print('\n')
+#     for name, param in model.named_parameters():
+#         print(name)
+#         print(param.requires_grad)
+#         print('\n')
     
     
     # Train model
-    trainer = pl.Trainer(gpus=1, max_epochs=100)
+#     trainer = pl.Trainer(gpus=1, max_epochs=100)
+    trainer = pl.Trainer(max_epochs=100)
     trainer.fit(model=model, datamodule=data_module)
     trainer.test(model, data_module.test_dataloader())
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-#     Print model summary
-#     print(model)
-    
-
-    
-
