@@ -72,13 +72,12 @@ class TabularT5QA(nn.Module):
 if __name__ == '__main__':
     model = TabularT5QA(3)
     statements = [
-        'Amanda is married with John Peter',
-        'John Peter is father of Maria Eduarda',
-        'Maria Eduarda was born in 2020',
-        'Amanda married John Peter in 2018',
+        'a watch is used for measuring time',
+        'times are measured in seconds',
     ]
     model.build_context(*statements)
-    question = 'Who is mother of Maria Eduarda?'
+    question = 'What can be used to measure seconds? ' \
+               '(A) Watch (B) seconds (C) fluid (D) Ruler (E) goggles (F) glasses (G) Drill (H) Scale'
     print(model.get_response(question))
     # task = 'Reorder the words in this sentence'
     # sentences = [
