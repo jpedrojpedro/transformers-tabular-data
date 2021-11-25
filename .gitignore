@@ -154,3 +154,6 @@ Pipfile.lock
 # datasets
 **/datasets/**
 !**/datasets/.keep
+
+# MacOS
+.DS_Store
