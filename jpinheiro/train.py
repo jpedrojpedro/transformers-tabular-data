@@ -1,63 +1,91 @@
+import time
 import torch
-import torchmetrics as tm
-import pytorch_lightning as pl
-from transformers import DistilBertForSequenceClassification
+from copy import deepcopy
+from torch.nn.functional import one_hot
 
 
-MODEL_NAME = 'distilbert-base-uncased-finetuned-sst-2-english'
+class TrainAndValidate:
+    def __init__(self, data_loader, model, criterion, optimizer, scheduler, num_epochs=25):
+        self.data_loader = data_loader
+        self.model = model
+        self.criterion = criterion
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.num_epochs = num_epochs
 
+    def run(self):
+        since = time.time()
+        best_model_wts = deepcopy(self.model.state_dict())
+        best_acc = 0.0
+        data_loaders = {
+            'train': self.data_loader.loader_train,
+            'val': self.data_loader.loader_validation
+        }
+        dataset_sizes = {
+            'train': self.data_loader.train_size,
+            'val': self.data_loader.validation_size
+        }
 
-class DistilBertTabular(pl.LightningModule):
-    def __init__(self, num_classes):
-        super().__init__()
-        self.model = DistilBertForSequenceClassification.from_pretrained(MODEL_NAME)
-        self.model.classifier = torch.nn.Linear(768, num_classes)
-        self.model.dropout = torch.nn.Identity()
-        
-        self.train_acc = tm.Accuracy()
-        self.val_acc = tm.Accuracy()
-        self.loss_fn = torch.nn.CrossEntropyLoss()
+        for epoch in range(self.num_epochs):
+            print('Epoch {}/{}'.format(epoch, self.num_epochs - 1))
+            print('-' * 10)
 
-    def forward(self, **kwargs):
-        preds = self.model(**kwargs)
-        return preds.logits
+            # Each epoch has a training and validation phase
+            for phase in ['train', 'val']:
+                if phase == 'train':
+                    self.model.train()  # Set model to training mode
+                else:
+                    self.model.eval()   # Set model to evaluate mode
 
-    def training_step(self, batch, batch_id):
-        batch, labels = batch
-        keys = batch.keys()
-        instance = {}
-        for key in keys:
-            instance[key] = torch.stack(batch[key], dim=0).transpose(1, 0).cpu()
-        pred = self.forward(**instance)
-        loss_value = self.loss_fn(pred, labels)
-        acc = self.train_acc(pred, labels)
-        self.log("train_loss", loss_value, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        return loss_value
+                running_loss = 0.0
+                running_corrects = 0
 
-    def training_epoch_end(self, training_step_outputs):
-        train_acc = self.train_acc.compute()
-        self.log("train_acc", train_acc, on_epoch=True, prog_bar=True, logger=True)
+                for inputs, labels in data_loaders[phase]:
+                    # inputs = inputs.to(device)
+                    # labels = labels.to(device)
 
-    def validation_step(self, batch, batch_id):
-        batch, labels = batch
-        keys = batch.keys()
-        instance = {}
-        for key in keys:
-            instance[key] = torch.stack(batch[key], dim=0).transpose(1, 0).cpu()
-        pred = self.forward(**instance)
-        loss_value = self.loss_fn(pred, labels)
-        acc = self.val_acc(pred, labels)
-        self.log('val_loss', loss_value, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        return pred
+                    # zero the parameter gradients
+                    self.optimizer.zero_grad()
 
-    def test_step(self, batch, batch_id):
-        return self.validation_step(batch, batch_id)
+                    # forward
+                    # track history if only in train
+                    one_hot_labels = one_hot(labels, num_classes=self.data_loader.dataset.num_classes())
+                    one_hot_labels = torch.squeeze(one_hot_labels)
+                    one_hot_labels = one_hot_labels.float()
+                    with torch.set_grad_enabled(phase == 'train'):
+                        outputs = self.model(inputs.long()).logits
+                        _, preds = torch.max(outputs, 1)
+                        loss = self.criterion(outputs, one_hot_labels)
 
-    def validation_epoch_end(self, validation_step_outputs):
-        acc = self.val_acc.compute()
-        print('validation acc', acc)
-        self.log("val_acc", acc, on_epoch=True, prog_bar=True, logger=True)
-        return acc
+                        # backward + optimize only if in training phase
+                        if phase == 'train':
+                            loss.backward()
+                            self.optimizer.step()
 
-    def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=1e-5)
+                    # statistics
+                    running_loss += loss.item() * inputs.size(0)
+                    running_corrects += torch.sum(preds == labels.data)
+                if phase == 'train':
+                    self.scheduler.step()
+
+                epoch_loss = running_loss / dataset_sizes[phase]
+                epoch_acc = running_corrects.double() / dataset_sizes[phase]
+
+                print('{} Loss: {:.4f} Acc: {:.4f}'.format(
+                    phase, epoch_loss, epoch_acc))
+
+                # deep copy the model
+                if phase == 'val' and epoch_acc > best_acc:
+                    best_acc = epoch_acc
+                    best_model_wts = deepcopy(self.model.state_dict())
+
+            print()
+
+        time_elapsed = time.time() - since
+        print('Training complete in {:.0f}m {:.0f}s'.format(
+            time_elapsed // 60, time_elapsed % 60))
+        print('Best val Acc: {:4f}'.format(best_acc))
+
+        # load best model weights
+        self.model.load_state_dict(best_model_wts)
+        return self.model
