@@ -4,9 +4,9 @@ from torch import nn
 from torch import optim
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 # from transformers import T5Tokenizer, T5ForConditionalGeneration
-from src.datasets import IrisDataset
-from src.loader import DataLoaderBuilder
-from src.train import TrainAndValidate
+from datasets import IrisDataset
+from loader import DataLoaderBuilder
+from train import TrainAndValidate
 
 
 def main():
