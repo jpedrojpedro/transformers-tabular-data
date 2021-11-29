@@ -5,7 +5,7 @@ from torch.nn.functional import one_hot
 
 
 class TrainAndValidate:
-    def __init__(self, data_loader, model, criterion, optimizer, scheduler, num_epochs=25):
+    def __init__(self, data_loader, model, criterion, optimizer, scheduler=None, num_epochs=25):
         self.data_loader = data_loader
         self.model = model
         self.criterion = criterion
@@ -65,7 +65,7 @@ class TrainAndValidate:
                     # statistics
                     running_loss += loss.item() * inputs.size(0)
                     running_corrects += torch.sum(preds == labels.data)
-                if phase == 'train':
+                if phase == 'train' and self.scheduler:
                     self.scheduler.step()
 
                 epoch_loss = running_loss / dataset_sizes[phase]
