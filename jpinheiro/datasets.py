@@ -24,14 +24,17 @@ class IrisDataset(Dataset):
         )
         encoded_inputs = torch.reshape(encoded_inputs, (-1,))
         encoded_inputs = self._normalizer(encoded_inputs)
+
         outputs = torch.tensor(self.data[idx, 4:], dtype=torch.long).to(self.device)
         # encoded_outputs = self.tokenizer.encode(
-        #     '  '.join([str(round(float(i), 2)) for i in self.data[idx, 4:]]), return_tensors='pt', padding=True
+        #     '  '.join([str(int(i)) for i in self.data[idx, 4:]]), return_tensors='pt', padding=True
         # )
         # encoded_outputs = torch.reshape(encoded_outputs, (-1,))
+        # encoded_outputs = self._normalizer(encoded_outputs, max_len=3)
+
         return encoded_inputs, outputs
 
-    def _normalizer(self, inputs, max_len=20):
+    def _normalizer(self, inputs, max_len=10):
         complement = max_len - len(inputs)
         if complement <= 0:
             inputs = inputs[:max_len]

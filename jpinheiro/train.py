@@ -51,9 +51,15 @@ class TrainAndValidate:
                     # track history if only in train
                     one_hot_labels = one_hot(labels, num_classes=self.data_loader.dataset.num_classes())
                     one_hot_labels = torch.squeeze(one_hot_labels)
-                    one_hot_labels = one_hot_labels.float()
                     with torch.set_grad_enabled(phase == 'train'):
-                        outputs = self.model(inputs.long()).logits
+                        if 'bert' in self.model.base_model_prefix:
+                            one_hot_labels = one_hot_labels.float()
+                            outputs = self.model(inputs.long()).logits
+                        elif 'transformer' in self.model.base_model_prefix:
+                            one_hot_labels = one_hot_labels.long()
+                            outputs = self.model(input_ids=inputs.long(), labels=one_hot_labels).logits
+                        else:
+                            raise NotImplementedError('Undefined model')
                         _, preds = torch.max(outputs, 1)
                         loss = self.criterion(outputs, one_hot_labels)
 

@@ -49,12 +49,14 @@ def main():
     # Observe that all parameters are being optimized
     # optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
     optimizer_ft = optim.Adam(model_ft.parameters(), lr=0.001)
-    # Decay LR by a factor of 0.1 every 7 epochs
-    # exp_lr_scheduler = optim.lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
+    # Decay LR by a factor of 0.1 every 10 epochs
+    exp_lr_scheduler = optim.lr_scheduler.StepLR(optimizer_ft, step_size=25, gamma=0.1)
 
     model_ft = customize_t5(model_ft)
     # model_ft = customize_bert(model_ft)
-    tv = TrainAndValidate(data_loader, model_ft.to(device), criterion, optimizer_ft)
+    tv = TrainAndValidate(
+        data_loader, model_ft.to(device), criterion, optimizer_ft, scheduler=exp_lr_scheduler, num_epochs=100
+    )
     tv.run()
 
 
