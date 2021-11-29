@@ -4,18 +4,20 @@ from torch.utils.data import Dataset
 
 
 class IrisDataset(Dataset):
-    def __init__(self, src_file, root_dir, tokenizer, device, both_ids=False):
+    def __init__(self, src_file, root_dir, device, both_ids=False):
         # data like: 5.0, 3.5, 1.3, 0.3, 0
         self.data = np.loadtxt(src_file, usecols=range(0, 5), delimiter=",", skiprows=0, dtype=np.float32)
         self.root_dir = root_dir
-        self.tokenizer = tokenizer
         self.device = device
         self.both_ids = both_ids
+        self.tokenizer = None
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
+        if not self.tokenizer:
+            raise AssertionError("Tokenizer should be set")
         if torch.is_tensor(idx):
             idx = idx.tolist()
         # inputs = torch.from_numpy(self.data[idx, 0:4]).to(self.device)
