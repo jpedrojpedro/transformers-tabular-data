@@ -1,106 +1,111 @@
 import time
 import torch
-from copy import deepcopy
+import datetime as dt
+from pathlib import Path
 from torch.nn.functional import one_hot
+from torch import nn
+from torch import optim
+import torchmetrics as tm
 
 
-def normalize_predictions(outputs):
-    result_tensor = torch.max(outputs, 1).values
-    new_tensor = torch.zeros(result_tensor.shape)
-    for idx, t in enumerate(result_tensor):
-        new_tensor[idx] = one_hot(torch.argmax(t), num_classes=len(t))
-    return torch.argmax(new_tensor, 1, keepdim=True)
+def model_state_path() -> Path:
+    base_path = Path(__file__)
+    state_dir = base_path.parent.parent / "model_state"
+    return state_dir
 
 
 class TrainAndValidate:
-    def __init__(self, data_loader, model, criterion, optimizer, scheduler=None, num_epochs=25):
+    def __init__(self,
+                 data_loader,
+                 model,
+                 loss_fn=nn.CrossEntropyLoss,
+                 opt_fn=optim.Adam,
+                 acc_fn=tm.Accuracy,
+                 scheduler=optim.lr_scheduler.StepLR,
+                 scheduler_step_size=25,
+                 scheduler_factor=0.1,
+                 num_epochs=75,
+                 learning_rate=1e-5
+                 ):
         self.data_loader = data_loader
         self.model = model
-        self.criterion = criterion
-        self.optimizer = optimizer
-        self.scheduler = scheduler
+        self.loss_fn = loss_fn()
+        self.optimizer = opt_fn(model.parameters(), lr=learning_rate)
+        self.train_acc = acc_fn()
+        self.val_acc = acc_fn()
+        self.scheduler = scheduler(self.optimizer, step_size=scheduler_step_size, gamma=scheduler_factor)
         self.num_epochs = num_epochs
 
-    def run(self):
+    def train(self):
         since = time.time()
-        best_model_wts = deepcopy(self.model.state_dict())
-        best_acc = 0.0
-        data_loaders = {
-            'train': self.data_loader.loader_train,
-            'val': self.data_loader.loader_validation
-        }
-        dataset_sizes = {
-            'train': self.data_loader.train_size,
-            'val': self.data_loader.validation_size
-        }
-
         for epoch in range(self.num_epochs):
-            print('Epoch {}/{}'.format(epoch, self.num_epochs - 1))
+            print('Epoch {}/{}'.format(epoch + 1, self.num_epochs))
             print('-' * 10)
-
-            # Each epoch has a training and validation phase
-            for phase in ['train', 'val']:
-                if phase == 'train':
-                    self.model.train()  # Set model to training mode
-                else:
-                    self.model.eval()   # Set model to evaluate mode
-
-                running_loss = 0.0
-                running_corrects = 0
-
-                for inputs, labels in data_loaders[phase]:
-                    # inputs = inputs.to(device)
-                    # labels = labels.to(device)
-
-                    # zero the parameter gradients
-                    self.optimizer.zero_grad()
-
-                    # forward
-                    # track history if only in train
-                    one_hot_labels = one_hot(labels, num_classes=self.data_loader.dataset.num_classes())
-                    one_hot_labels = torch.squeeze(one_hot_labels)
-                    with torch.set_grad_enabled(phase == 'train'):
-                        if 'bert' in self.model.base_model_prefix:
-                            one_hot_labels = one_hot_labels.float()
-                            outputs = self.model(inputs.long()).logits
-                            _, predictions = torch.max(outputs, 1, keepdim=True)
-                        elif 'transformer' in self.model.base_model_prefix:
-                            one_hot_labels = one_hot_labels.long()
-                            outputs = self.model(input_ids=inputs.long(), labels=one_hot_labels).logits
-                            predictions = normalize_predictions(outputs)
-                        else:
-                            raise NotImplementedError('Undefined model')
-                        loss = self.criterion(outputs, one_hot_labels)
-
-                        # backward + optimize only if in training phase
-                        if phase == 'train':
-                            loss.backward()
-                            self.optimizer.step()
-
-                    # statistics
-                    running_loss += loss.item() * inputs.size(0)
-                    running_corrects += torch.sum(predictions == labels)
-                if phase == 'train' and self.scheduler:
-                    self.scheduler.step()
-
-                epoch_loss = running_loss / dataset_sizes[phase]
-                epoch_acc = running_corrects.double() / dataset_sizes[phase]
-
-                print('{} Loss: {:.4f} Acc: {:.4f}'.format(
-                    phase, epoch_loss, epoch_acc))
-
-                # deep copy the model
-                if phase == 'val' and epoch_acc > best_acc:
-                    best_acc = epoch_acc
-                    best_model_wts = deepcopy(self.model.state_dict())
-
+            running_loss = 0.0
+            training_total = 0
+            for inputs, labels in self.data_loader.loader_train:
+                batch_len, outputs, one_hot_labels = self._boilerplate(inputs, labels)
+                training_total += batch_len
+                loss = self.loss_fn(outputs, one_hot_labels)
+                running_loss += loss.item() * inputs.size(0)
+                # Backward pass
+                loss.backward()
+                self.optimizer.step()
+                self.train_acc(outputs, one_hot_labels.int())
+            # self.scheduler.step()
+            epoch_acc = self.train_acc.compute()
+            epoch_loss = running_loss / training_total
+            print('Train Loss: {:.4f} Acc: {:.4f}'.format(epoch_loss, epoch_acc))
             print()
-
         time_elapsed = time.time() - since
-        print('Training complete in {:.0f}m {:.0f}s'.format(
-            time_elapsed // 60, time_elapsed % 60))
-        print('Best val Acc: {:4f}'.format(best_acc))
+        print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
+        self.persist_model()
 
-        # load best model weights
-        self.model.load_state_dict(best_model_wts)
-        return self.model
+    def validate(self, model_state='20211130-175623_state.pt'):
+        self.load_model(model_state)
+        since = time.time()
+        for epoch in range(self.num_epochs):
+            print('Epoch {}/{}'.format(epoch + 1, self.num_epochs))
+            print('-' * 10)
+            running_loss = 0.0
+            validation_total = 0
+            for inputs, labels in self.data_loader.loader_validation:
+                batch_len, outputs, one_hot_labels = self._boilerplate(inputs, labels)
+                validation_total += batch_len
+                loss = self.loss_fn(outputs, one_hot_labels)
+                running_loss += loss.item() * inputs.size(0)
+                self.val_acc(outputs, one_hot_labels.int())
+            epoch_acc = self.val_acc.compute()
+            epoch_loss = running_loss / validation_total
+            print('Validation Loss: {:.4f} Acc: {:.4f}'.format(epoch_loss, epoch_acc))
+            print()
+        time_elapsed = time.time() - since
+        print('Validation complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
+
+    def _boilerplate(self, inputs, labels):
+        batch_len = len(inputs)
+        one_hot_labels = one_hot(labels, num_classes=self.data_loader.dataset.num_classes())
+        one_hot_labels = torch.squeeze(one_hot_labels)
+
+        if 'bert' in self.model.base_model_prefix:
+            one_hot_labels = one_hot_labels.float()
+            outputs = self.model(inputs.long()).logits
+        elif 'transformer' in self.model.base_model_prefix:
+            one_hot_labels = one_hot_labels.long()
+            outputs = self.model(input_ids=inputs.long(), labels=one_hot_labels).logits
+        else:
+            raise NotImplementedError('Undefined model')
+
+        return batch_len, outputs, one_hot_labels
+
+    def persist_model(self):
+        now = dt.datetime.now()
+        state_filename = "{}_state.pt".format(now.strftime("%Y%m%d-%H%M%S"))
+        full_path = model_state_path() / state_filename
+        with open(full_path, 'w'):
+            torch.save(self.model.state_dict(), full_path)
+
+    def load_model(self, state_filename):
+        full_path = model_state_path() / state_filename
+        self.model.load_state_dict(torch.load(full_path))
+        self.model.eval()

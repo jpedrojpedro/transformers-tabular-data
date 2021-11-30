@@ -1,7 +1,6 @@
 import torch
 from pathlib import Path
 from torch import nn
-from torch import optim
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 from datasets import IrisDataset
@@ -38,17 +37,9 @@ def main():
     data_loader = DataLoaderBuilder(iris_ds)
     data_loader.build()
 
-    criterion = nn.CrossEntropyLoss()
-    # Observe that all parameters are being optimized
-    # optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
-    optimizer_ft = optim.Adam(model_ft.parameters(), lr=0.001)
-    # Decay LR by a factor of 0.1 every 10 epochs
-    # exp_lr_scheduler = optim.lr_scheduler.StepLR(optimizer_ft, step_size=25, gamma=0.1)
-
-    tv = TrainAndValidate(
-        data_loader, model_ft.to(device), criterion, optimizer_ft, num_epochs=100
-    )
-    tv.run()
+    tv = TrainAndValidate(data_loader, model_ft.to(device))
+    # tv.train()
+    tv.validate()
 
 
 if __name__ == '__main__':

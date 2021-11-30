@@ -157,3 +157,7 @@ Pipfile.lock
 
 # MacOS
 .DS_Store
+
+# model states
+model_state/**
+!model_state/.keep
