@@ -4,6 +4,14 @@ from copy import deepcopy
 from torch.nn.functional import one_hot
 
 
+def normalize_predictions(outputs):
+    result_tensor = torch.max(outputs, 1).values
+    new_tensor = torch.zeros(result_tensor.shape)
+    for idx, t in enumerate(result_tensor):
+        new_tensor[idx] = one_hot(torch.argmax(t), num_classes=len(t))
+    return torch.argmax(new_tensor, 1, keepdim=True)
+
+
 class TrainAndValidate:
     def __init__(self, data_loader, model, criterion, optimizer, scheduler=None, num_epochs=25):
         self.data_loader = data_loader
@@ -55,12 +63,13 @@ class TrainAndValidate:
                         if 'bert' in self.model.base_model_prefix:
                             one_hot_labels = one_hot_labels.float()
                             outputs = self.model(inputs.long()).logits
+                            _, predictions = torch.max(outputs, 1, keepdim=True)
                         elif 'transformer' in self.model.base_model_prefix:
                             one_hot_labels = one_hot_labels.long()
                             outputs = self.model(input_ids=inputs.long(), labels=one_hot_labels).logits
+                            predictions = normalize_predictions(outputs)
                         else:
                             raise NotImplementedError('Undefined model')
-                        _, preds = torch.max(outputs, 1)
                         loss = self.criterion(outputs, one_hot_labels)
 
                         # backward + optimize only if in training phase
@@ -70,7 +79,7 @@ class TrainAndValidate:
 
                     # statistics
                     running_loss += loss.item() * inputs.size(0)
-                    running_corrects += torch.sum(preds == labels.data)
+                    running_corrects += torch.sum(predictions == labels)
                 if phase == 'train' and self.scheduler:
                     self.scheduler.step()
 

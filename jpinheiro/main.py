@@ -32,8 +32,8 @@ def main():
     datasets_folder = Path(__file__).parent.parent / "datasets"
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     iris_ds = IrisDataset(datasets_folder / "iris" / "iris.data", datasets_folder / "iris", device)
-    # model_ft, tokenizer = load_bert(iris_ds.num_classes())
-    model_ft, tokenizer = load_t5(iris_ds.num_classes())
+    model_ft, tokenizer = load_bert(iris_ds.num_classes())
+    # model_ft, tokenizer = load_t5(iris_ds.num_classes())
     iris_ds.tokenizer = tokenizer
     data_loader = DataLoaderBuilder(iris_ds)
     data_loader.build()
@@ -43,10 +43,10 @@ def main():
     # optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
     optimizer_ft = optim.Adam(model_ft.parameters(), lr=0.001)
     # Decay LR by a factor of 0.1 every 10 epochs
-    exp_lr_scheduler = optim.lr_scheduler.StepLR(optimizer_ft, step_size=25, gamma=0.1)
+    # exp_lr_scheduler = optim.lr_scheduler.StepLR(optimizer_ft, step_size=25, gamma=0.1)
 
     tv = TrainAndValidate(
-        data_loader, model_ft.to(device), criterion, optimizer_ft, scheduler=exp_lr_scheduler, num_epochs=100
+        data_loader, model_ft.to(device), criterion, optimizer_ft, num_epochs=100
     )
     tv.run()
 
