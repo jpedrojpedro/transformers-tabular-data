@@ -15,6 +15,18 @@ def load_bert(num_classes):
     num_ftrs = model_ft.classifier.in_features
     model_ft.classifier = nn.Linear(num_ftrs, num_classes)
     model_ft.dropout = nn.Identity()
+    # freezing all parameters
+    for param in model_ft.parameters():
+        param.requires_grad = False
+    # activating specific layers
+    for i in range(6):
+        model_ft.distilbert.transformer.layer[i].sa_layer_norm.requires_grad_(True)
+        model_ft.distilbert.transformer.layer[i].ffn.dropout.requires_grad_(True)
+        model_ft.distilbert.transformer.layer[i].ffn.lin1.requires_grad_(True)
+        model_ft.distilbert.transformer.layer[i].ffn.lin2.requires_grad_(True)
+        model_ft.distilbert.transformer.layer[i].output_layer_norm.requires_grad_(True)
+    model_ft.classifier.requires_grad_(True)
+    model_ft.dropout.requires_grad_(True)
     return model_ft, tokenizer
 
 

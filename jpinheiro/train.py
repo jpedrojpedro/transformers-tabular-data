@@ -8,9 +8,9 @@ from torch import optim
 import torchmetrics as tm
 
 
-def model_state_path() -> Path:
+def model_state_path(model_prefix) -> Path:
     base_path = Path(__file__)
-    state_dir = base_path.parent.parent / "model_state"
+    state_dir = base_path.parent.parent / "model_state" / model_prefix
     return state_dir
 
 
@@ -29,6 +29,7 @@ class TrainAndValidate:
                  ):
         self.data_loader = data_loader
         self.model = model
+        self._set_model_prefix()
         self.loss_fn = loss_fn()
         self.optimizer = opt_fn(model.parameters(), lr=learning_rate)
         self.train_acc = acc_fn()
@@ -61,7 +62,7 @@ class TrainAndValidate:
         print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
         self.persist_model()
 
-    def validate(self, model_state='20211130-175623_state.pt'):
+    def validate(self, model_state='20211130-201153_state.pt'):
         self.load_model(model_state)
         since = time.time()
         for epoch in range(self.num_epochs):
@@ -98,14 +99,23 @@ class TrainAndValidate:
 
         return batch_len, outputs, one_hot_labels
 
+    def _set_model_prefix(self):
+        model_prefix = self.model.base_model_prefix
+        if 'bert' in model_prefix:
+            self.model_prefix = 'bert'
+        elif 'transformer' in model_prefix:
+            self.model_prefix = 'transformer'
+        else:
+            self.model_prefix = 'undefined'
+
     def persist_model(self):
         now = dt.datetime.now()
         state_filename = "{}_state.pt".format(now.strftime("%Y%m%d-%H%M%S"))
-        full_path = model_state_path() / state_filename
+        full_path = model_state_path(self.model_prefix) / state_filename
         with open(full_path, 'w'):
             torch.save(self.model.state_dict(), full_path)
 
     def load_model(self, state_filename):
-        full_path = model_state_path() / state_filename
+        full_path = model_state_path(self.model_prefix) / state_filename
         self.model.load_state_dict(torch.load(full_path))
         self.model.eval()

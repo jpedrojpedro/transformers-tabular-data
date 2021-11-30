@@ -159,5 +159,7 @@ Pipfile.lock
 .DS_Store
 
 # model states
-model_state/**
-!model_state/.keep
+model_state/bert/**
+!model_state/bert/.keep
+model_state/transformer/**
+!model_state/transformer/.keep
