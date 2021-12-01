@@ -161,5 +161,7 @@ Pipfile.lock
 # model states
 model_state/bert/**
 !model_state/bert/.keep
-model_state/transformer/**
-!model_state/transformer/.keep
+model_state/t5/**
+!model_state/t5/.keep
+model_state/t0/**
+!model_state/t0/.keep
