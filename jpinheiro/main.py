@@ -1,12 +1,26 @@
 import torch
 from pathlib import Path
 from torch import nn
-from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
-from transformers import T5Tokenizer, T5ForConditionalGeneration
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from datasets import IrisDataset
 from loader import DataLoaderBuilder
 from train import TrainAndValidate
+
+from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+from transformers import T5Tokenizer, T5ForConditionalGeneration
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import RobertaModel, RobertaTokenizer
+from transformers import RobertaForSequenceClassification, RobertaConfig
+from transformers import GPT2Tokenizer, GPT2LMHeadModel, GPT2ForSequenceClassification, GPT2Config
+    
+def load_roberta(num_classes):
+    config = RobertaConfig.from_pretrained('roberta-base')
+    tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
+    model_ft = RobertaForSequenceClassification(config)
+    
+    num_ftrs = model_ft.classifier.out_proj.in_features
+    model_ft.classifier.out_proj = nn.Linear(num_ftrs, num_classes)
+    model_ft.dropout = nn.Identity()
+    return model_ft, tokenizer
 
 
 def load_bert(num_classes, freeze=False):
@@ -72,18 +86,43 @@ def load_t0(num_classes, freeze=False):
     return model_ft, tokenizer
 
 
+def load_gpt2(num_classes, freeze=False):
+    model_name = 'gpt2-medium'
+#     model_config = GPT2Config.from_pretrained(pretrained_model_name_or_path=model_name, num_labels=num_classes)
+    tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+    
+    # Adding padding left and right
+#     tokenizer.padding_side = "left"
+    tokenizer.pad_token = tokenizer.eos_token
+    
+    # Loading model
+    model_ft = GPT2ForSequenceClassification.from_pretrained(model_name)
+#     model_ft.resize_token_embeddings(len(tokenizer))
+    model_ft.config.pad_token_id = model_ft.config.eos_token_id
+
+    # Modifying last layer
+    num_ftrs = model_ft.score.in_features
+    model_ft.score = nn.Linear(num_ftrs, 3)
+    return model_ft, tokenizer
+
+
 def main():
     datasets_folder = Path(__file__).parent.parent / "datasets"
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     iris_ds = IrisDataset(datasets_folder / "iris" / "iris.data", datasets_folder / "iris", device)
-    # model_ft, tokenizer = load_bert(iris_ds.num_classes())
-    # model_ft, tokenizer = load_t5(iris_ds.num_classes())
-    model_ft, tokenizer = load_t0(iris_ds.num_classes(), freeze=True)
+#     iris_ds = IrisDataset(datasets_folder / "abalone" / "abalone_str.data", datasets_folder / "abalone", device)
+
+#     model_ft, tokenizer = load_bert(iris_ds.num_classes())
+    model_ft, tokenizer = load_roberta(iris_ds.num_classes())
+#     model_ft, tokenizer = load_t5(iris_ds.num_classes())
+    model_ft, tokenizer = load_gpt2(iris_ds.num_classes())
+    
     iris_ds.tokenizer = tokenizer
     data_loader = DataLoaderBuilder(iris_ds)
     data_loader.build()
 
-    tv = TrainAndValidate(data_loader, model_ft.to(device))
+#     tv = TrainAndValidate(data_loader, model_ft.to(device))
+    tv = TrainAndValidate(data_loader, model_ft)
     tv.train()
     # tv.validate()
 
