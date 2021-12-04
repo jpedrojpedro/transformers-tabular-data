@@ -7,7 +7,7 @@ class IrisDataset(Dataset):
     def __init__(self, src_file, root_dir, device, both_ids=False):
 #     def __init__(self, src_file, root_dir, both_ids=False):
         # data like: 5.0, 3.5, 1.3, 0.3, 0
-        self.data = np.loadtxt(src_file, usecols=range(0, 5), delimiter=",", skiprows=0)
+        self.data = np.loadtxt(src_file, delimiter=",", skiprows=0)
         self.root_dir = root_dir
         self.device = device
         self.both_ids = both_ids
