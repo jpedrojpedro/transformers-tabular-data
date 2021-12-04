@@ -109,7 +109,8 @@ def load_gpt2(num_classes, freeze=False):
 def main():
     datasets_folder = Path(__file__).parent.parent / "datasets"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-#     iris_ds = IrisDataset(datasets_folder / "iris" / "iris.data", datasets_folder / "iris", device)
+    iris_ds = IrisDataset(datasets_folder / "iris" / "iris.data", datasets_folder / "iris", device)
+#     iris_ds = IrisDataset(datasets_folder / "abalone" / "abalone_str.data", datasets_folder / "abalone", device)
 
     model_ft, tokenizer = load_bert(iris_ds.num_classes())
 #     model_ft, tokenizer = load_roberta(iris_ds.num_classes())
