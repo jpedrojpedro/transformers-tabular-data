@@ -88,7 +88,7 @@ class IrisWrittenDataset(BaseDataset):
                  src_file,
                  root_dir,
                  device,
-                 build_input_fn=concat_table_values,
+                 build_input_fn=written_form_table_values,
                  max_encoded_len=15
                  ):
         super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
@@ -116,7 +116,7 @@ class AbaloneWrittenDataset(BaseDataset):
                  src_file,
                  root_dir,
                  device,
-                 build_input_fn=concat_table_values,
+                 build_input_fn=written_form_table_values,
                  max_encoded_len=60
                  ):
         super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
