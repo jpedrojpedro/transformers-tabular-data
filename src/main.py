@@ -1,7 +1,7 @@
 import torch
 from pathlib import Path
 from torch import nn
-from datasets import IrisDataset, AbaloneDataset, concat_table_values, written_form_table_values
+from datasets import IrisWrittenDataset, IrisConcatDataset, AbaloneWrittenDataset, AbaloneConcatDataset
 from loader import DataLoaderBuilder
 from train import TrainAndValidate
 
@@ -120,13 +120,19 @@ def load_gpt2(num_classes, freeze=False):
 
 def select_process_combination():
     opts = {
-        1: ("bert", "iris"),
-        2: ("t5", "iris"),
-        3: ("gpt2", "iris"),
-        4: ("bert", "abalone"),
-        5: ("t5", "abalone"),
-        6: ("gpt2", "abalone"),
-        99: ("exit", ""),
+        1: ("bert", "iris-concat"),
+        2: ("bert", "iris-written"),
+        3: ("bert", "abalone-written"),
+        4: ("bert", "abalone-written"),
+        5: ("t5", "iris-concat"),
+        6: ("t5", "iris-written"),
+        7: ("t5", "abalone-concat"),
+        8: ("t5", "abalone-written"),
+        9: ("gpt2", "iris-concat"),
+        10: ("gpt2", "iris-written"),
+        11: ("gpt2", "abalone-concat"),
+        12: ("gpt2", "abalone-written"),
+        99: ("exit", "exit"),
     }
     print("What combination do you want?")
     print("-" * 10)
@@ -143,18 +149,18 @@ def main():
         return
 
     datasets_folder = Path(__file__).parent.parent / "datasets"
+    iris_data_file = datasets_folder / "iris" / "iris.data"
+    abalone_data_file = datasets_folder / "abalone" / "abalone_str.data"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    if dataset == 'iris':
-        ds = IrisDataset(
-            datasets_folder / "iris" / "iris.data", datasets_folder / "iris", device,
-            build_input_fn=written_form_table_values, max_encoded_len=15
-        )
-    elif dataset == 'abalone':
-        ds = AbaloneDataset(
-            datasets_folder / "abalone" / "abalone_str.data", datasets_folder / "abalone", device,
-            build_input_fn=concat_table_values, max_encoded_len=30
-        )
+    if dataset == 'iris-written':
+        ds = IrisWrittenDataset(iris_data_file, iris_data_file.parent, device)
+    elif dataset == 'iris-concat':
+        ds = IrisConcatDataset(iris_data_file, iris_data_file.parent, device)
+    elif dataset == 'abalone-written':
+        ds = AbaloneWrittenDataset(abalone_data_file, abalone_data_file.parent, device)
+    elif dataset == 'abalone-concat':
+        ds = AbaloneConcatDataset(abalone_data_file, abalone_data_file.parent, device)
     else:
         raise FileNotFoundError("Invalid Dataset selection")
 
@@ -171,7 +177,7 @@ def main():
     ds.tokenizer = tokenizer
     data_loader = DataLoaderBuilder(ds)
     data_loader.build()
-    tv = TrainAndValidate(data_loader, model_ft)
+    tv = TrainAndValidate(data_loader, model_ft, num_epochs=100)
     tv.train()
 
 

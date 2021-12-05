@@ -69,7 +69,7 @@ class BaseDataset(Dataset):
         return len(set([row[-1] for row in self.data]))
 
 
-class IrisDataset(BaseDataset):
+class IrisConcatDataset(BaseDataset):
     def __init__(self,
                  src_file,
                  root_dir,
@@ -80,18 +80,46 @@ class IrisDataset(BaseDataset):
         super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
 
     def name(self):
-        return 'iris'
+        return 'iris-concat'
 
 
-class AbaloneDataset(BaseDataset):
+class IrisWrittenDataset(BaseDataset):
     def __init__(self,
                  src_file,
                  root_dir,
                  device,
                  build_input_fn=concat_table_values,
-                 max_encoded_len=10
+                 max_encoded_len=15
                  ):
         super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
 
     def name(self):
-        return 'abalone'
+        return 'iris-written'
+
+
+class AbaloneConcatDataset(BaseDataset):
+    def __init__(self,
+                 src_file,
+                 root_dir,
+                 device,
+                 build_input_fn=concat_table_values,
+                 max_encoded_len=30
+                 ):
+        super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
+
+    def name(self):
+        return 'abalone-concat'
+
+
+class AbaloneWrittenDataset(BaseDataset):
+    def __init__(self,
+                 src_file,
+                 root_dir,
+                 device,
+                 build_input_fn=concat_table_values,
+                 max_encoded_len=60
+                 ):
+        super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
+
+    def name(self):
+        return 'abalone-written'
