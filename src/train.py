@@ -117,7 +117,7 @@ class TrainAndValidate:
 
     def persist_model(self):
         now = dt.datetime.now()
-        state_filename = "{}_state.pt".format(now.strftime("%Y%m%d-%H%M%S"))
+        state_filename = "{}-{}.pt".format(now.strftime("%Y%m%d-%H%M%S"), self.data_loader.dataset.name())
         full_path = model_state_path(self.model_prefix) / state_filename
         with open(full_path, 'w'):
             torch.save(self.model.state_dict(), full_path)

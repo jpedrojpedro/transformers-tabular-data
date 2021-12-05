@@ -1,7 +1,7 @@
 import torch
 from pathlib import Path
 from torch import nn
-from datasets import IrisDataset
+from datasets import IrisDataset, AbaloneDataset, concat_table_values, written_form_table_values
 from loader import DataLoaderBuilder
 from train import TrainAndValidate
 
@@ -118,25 +118,61 @@ def load_gpt2(num_classes, freeze=False):
     return model_ft, tokenizer
 
 
+def select_process_combination():
+    opts = {
+        1: ("bert", "iris"),
+        2: ("t5", "iris"),
+        3: ("gpt2", "iris"),
+        4: ("bert", "abalone"),
+        5: ("t5", "abalone"),
+        6: ("gpt2", "abalone"),
+        99: ("exit", ""),
+    }
+    print("What combination do you want?")
+    print("-" * 10)
+    for key, val in opts.items():
+        print(f"{key} - {' + '.join(val)}")
+    sel = int(input("> "))
+    print("")
+    return opts[sel]
+
+
 def main():
+    model, dataset = select_process_combination()
+    if model == 'exit':
+        return
+
     datasets_folder = Path(__file__).parent.parent / "datasets"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    iris_ds = IrisDataset(datasets_folder / "iris" / "iris.data", datasets_folder / "iris", device)
-    # iris_ds = IrisDataset(datasets_folder / "abalone" / "abalone_str.data", datasets_folder / "abalone", device)
 
-    # model_ft, tokenizer = load_bert(iris_ds.num_classes())
-    # model_ft, tokenizer = load_roberta(iris_ds.num_classes())
-    # model_ft, tokenizer = load_t5(iris_ds.num_classes())
-    model_ft, tokenizer = load_gpt2(iris_ds.num_classes())
+    if dataset == 'iris':
+        ds = IrisDataset(
+            datasets_folder / "iris" / "iris.data", datasets_folder / "iris", device,
+            build_input_fn=written_form_table_values, max_encoded_len=15
+        )
+    elif dataset == 'abalone':
+        ds = AbaloneDataset(
+            datasets_folder / "abalone" / "abalone_str.data", datasets_folder / "abalone", device,
+            build_input_fn=concat_table_values, max_encoded_len=30
+        )
+    else:
+        raise FileNotFoundError("Invalid Dataset selection")
 
-    iris_ds.tokenizer = tokenizer
-    data_loader = DataLoaderBuilder(iris_ds)
+    if model == 'bert':
+        model_fn = load_bert
+    elif model == 't5':
+        model_fn = load_t5
+    elif model == 'gpt2':
+        model_fn = load_gpt2
+    else:
+        raise ModuleNotFoundError("Invalid Model selection")
+
+    model_ft, tokenizer = model_fn(ds.num_classes(), freeze=True)
+    ds.tokenizer = tokenizer
+    data_loader = DataLoaderBuilder(ds)
     data_loader.build()
-
-    # tv = TrainAndValidate(data_loader, model_ft.to(device))
     tv = TrainAndValidate(data_loader, model_ft)
     tv.train()
-    # tv.validate()
 
 
 if __name__ == '__main__':
