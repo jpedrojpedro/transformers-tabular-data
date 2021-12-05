@@ -165,3 +165,5 @@ model_state/t5/**
 !model_state/t5/.keep
 model_state/t0/**
 !model_state/t0/.keep
+model_state/gpt2/**
+!model_state/gpt2/.keep

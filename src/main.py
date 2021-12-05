@@ -91,21 +91,30 @@ def load_gpt2(num_classes, freeze=False):
     from transformers import GPT2Tokenizer, GPT2LMHeadModel, GPT2ForSequenceClassification, GPT2Config
 
     model_name = 'gpt2-medium'
-    # model_config = GPT2Config.from_pretrained(pretrained_model_name_or_path=model_name, num_labels=num_classes)
+    model_ft = GPT2ForSequenceClassification.from_pretrained(model_name)
     tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+    num_ftrs = model_ft.score.in_features
+    model_ft.score = nn.Linear(num_ftrs, num_classes)
 
+    # model_config = GPT2Config.from_pretrained(pretrained_model_name_or_path=model_name, num_labels=num_classes)
     # Adding padding left and right
-    # tokenizer.padding_side = "left"
+    tokenizer.padding_side = "left"
     tokenizer.pad_token = tokenizer.eos_token
 
     # Loading model
-    model_ft = GPT2ForSequenceClassification.from_pretrained(model_name)
+    # model_ft = GPT2ForSequenceClassification.from_pretrained(model_name)
     # model_ft.resize_token_embeddings(len(tokenizer))
     model_ft.config.pad_token_id = model_ft.config.eos_token_id
 
-    # Modifying last layer
-    num_ftrs = model_ft.score.in_features
-    model_ft.score = nn.Linear(num_ftrs, num_classes)
+    if freeze:
+        # freezing all parameters
+        for param in model_ft.parameters():
+            param.requires_grad = False
+        # activating specific layers
+        for i in range(24):
+            model_ft.transformer.h[i].ln_1.requires_grad_(True)
+            model_ft.transformer.h[i].ln_2.requires_grad_(True)
+        model_ft.score.requires_grad_(True)
     return model_ft, tokenizer
 
 
@@ -115,10 +124,10 @@ def main():
     iris_ds = IrisDataset(datasets_folder / "iris" / "iris.data", datasets_folder / "iris", device)
     # iris_ds = IrisDataset(datasets_folder / "abalone" / "abalone_str.data", datasets_folder / "abalone", device)
 
-    model_ft, tokenizer = load_bert(iris_ds.num_classes())
+    # model_ft, tokenizer = load_bert(iris_ds.num_classes())
     # model_ft, tokenizer = load_roberta(iris_ds.num_classes())
     # model_ft, tokenizer = load_t5(iris_ds.num_classes())
-    # model_ft, tokenizer = load_gpt2(iris_ds.num_classes())
+    model_ft, tokenizer = load_gpt2(iris_ds.num_classes())
 
     iris_ds.tokenizer = tokenizer
     data_loader = DataLoaderBuilder(iris_ds)

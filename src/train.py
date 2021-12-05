@@ -87,15 +87,14 @@ class TrainAndValidate:
         batch_len = len(inputs)
         one_hot_labels = one_hot(labels, num_classes=self.data_loader.dataset.num_classes())
         one_hot_labels = torch.squeeze(one_hot_labels)
-        
-        
-        if 'bert' in self.model.base_model_prefix: # BERT and ROBERTA
+
+        if 'bert' in self.model_prefix:
             one_hot_labels = one_hot_labels.float()
             outputs = self.model(inputs.long()).logits
         elif 't5' == self.model_prefix or 't0' == self.model_prefix:
             one_hot_labels = one_hot_labels.long()
             outputs = self.model(input_ids=inputs.long(), labels=one_hot_labels).logits
-        elif 'transformer' == self.model.base_model_prefix: # GPT2
+        elif 'transformer' == self.model_prefix or 'gpt2' == self.model_prefix:
             one_hot_labels = one_hot_labels.float()
             outputs = self.model(inputs.long()).logits
         else:
@@ -111,6 +110,8 @@ class TrainAndValidate:
             self.model_prefix = 't5'
         elif 't0' in model_prefix.lower():
             self.model_prefix = 't0'
+        elif 'gpt2' in model_prefix.lower():
+            self.model_prefix = 'gpt2'
         else:
             self.model_prefix = 'undefined'
 
