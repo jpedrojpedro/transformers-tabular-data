@@ -75,7 +75,7 @@ class IrisConcatDataset(BaseDataset):
                  root_dir,
                  device,
                  build_input_fn=concat_table_values,
-                 max_encoded_len=10
+                 max_encoded_len=15
                  ):
         super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
 

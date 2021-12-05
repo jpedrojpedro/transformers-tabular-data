@@ -122,7 +122,7 @@ def select_process_combination():
     opts = {
         1: ("bert", "iris-concat"),
         2: ("bert", "iris-written"),
-        3: ("bert", "abalone-written"),
+        3: ("bert", "abalone-concat"),
         4: ("bert", "abalone-written"),
         5: ("t5", "iris-concat"),
         6: ("t5", "iris-written"),
