@@ -10,6 +10,7 @@ def _normalizer(inputs, max_len=10, device=None):
     if complement <= 0:
         inputs = inputs[:max_len]
     else:
+        # [PAD] token is represented with index 0
         inputs = torch.cat((inputs, torch.zeros(complement)))
     if device:
         inputs = inputs.to(device)
@@ -75,7 +76,7 @@ class IrisConcatDataset(BaseDataset):
                  root_dir,
                  device,
                  build_input_fn=concat_table_values,
-                 max_encoded_len=15
+                 max_encoded_len=64
                  ):
         super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
 
@@ -89,7 +90,7 @@ class IrisWrittenDataset(BaseDataset):
                  root_dir,
                  device,
                  build_input_fn=written_form_table_values,
-                 max_encoded_len=15
+                 max_encoded_len=64
                  ):
         super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
 
@@ -103,7 +104,7 @@ class AbaloneConcatDataset(BaseDataset):
                  root_dir,
                  device,
                  build_input_fn=concat_table_values,
-                 max_encoded_len=30
+                 max_encoded_len=128
                  ):
         super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
 
@@ -117,7 +118,7 @@ class AbaloneWrittenDataset(BaseDataset):
                  root_dir,
                  device,
                  build_input_fn=written_form_table_values,
-                 max_encoded_len=60
+                 max_encoded_len=128
                  ):
         super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
 
