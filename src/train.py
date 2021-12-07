@@ -53,12 +53,9 @@ class TrainAndValidate:
                         decoder_attention_mask=labels['attention_mask_outputs'],
                     )
                     batch_len = inputs['encoded_inputs_ids'].size(0)
-                    outputs = full_outputs.logits
+                    outputs = torch.argmax(full_outputs.logits, dim=2)
                     loss = full_outputs.loss
-                    one_hot_labels = one_hot(
-                        labels['encoded_outputs_ids'],
-                        num_classes=outputs.size(2)
-                    )
+                    one_hot_labels = labels['encoded_outputs_ids']
                 else:
                     batch_len, outputs, one_hot_labels = self._boilerplate(inputs, labels)
                     loss = self.loss_fn(outputs, one_hot_labels)
