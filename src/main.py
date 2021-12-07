@@ -5,8 +5,6 @@ from datasets import IrisWrittenDataset,    \
                      AbaloneWrittenDataset, \
                      AbaloneConcatDataset,  \
                      IrisT5Dataset
-
-from torch import nn
 from loader import DataLoaderBuilder
 from train import TrainAndValidate
 from models import load_bert, load_t5, load_gpt2
@@ -60,8 +58,6 @@ def main():
         ds = AbaloneWrittenDataset(abalone_data_file, abalone_data_file.parent, device)
     elif dataset == 'abalone-concat':
         ds = AbaloneConcatDataset(abalone_data_file, abalone_data_file.parent, device)
-    elif dataset == 'corona-concat':
-        ds = CoronaDataset(corona_data_file, corona_data_file.parent, device)
     else:
         raise FileNotFoundError("Invalid Dataset selection")
 

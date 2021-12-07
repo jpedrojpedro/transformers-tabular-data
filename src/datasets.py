@@ -92,7 +92,7 @@ class IrisT5Dataset(BaseDataset):
         encoded_inputs = self.tokenizer.encode_plus(
             text,
             max_length=self.max_encoded_len,
-            pad_to_max_length=True,
+            padding='max_length',
             truncation=True,
             return_attention_mask=True,
             return_token_type_ids=False,
@@ -107,7 +107,7 @@ class IrisT5Dataset(BaseDataset):
         encoded_outputs = self.tokenizer.encode_plus(
             outputs,
             max_length=self.max_encoded_len,
-            pad_to_max_length=True,
+            padding='max_length',
             truncation=True,
             return_attention_mask=True,
             return_token_type_ids=False,
