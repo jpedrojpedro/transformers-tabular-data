@@ -8,10 +8,17 @@ from torch import optim
 import torchmetrics as tm
 
 
-def model_state_path(model_prefix) -> Path:
+def model_state_path(model_prefix, log=False) -> Path:
     base_path = Path(__file__)
     state_dir = base_path.parent.parent / "model_state" / model_prefix
+    if log:
+        state_dir = state_dir / "logs"
     return state_dir
+
+
+def naming(dataset_name, extension='pt'):
+    now = dt.datetime.now()
+    return "{}-{}.{}".format(now.strftime("%Y%m%d-%H%M%S"), dataset_name, extension)
 
 
 class TrainAndValidate:
@@ -36,12 +43,13 @@ class TrainAndValidate:
         self.val_acc = acc_fn()
         self.scheduler = scheduler(self.optimizer, step_size=scheduler_step_size, gamma=scheduler_factor)
         self.num_epochs = num_epochs
+        self.train_log_file = None
 
     def train(self):
         since = time.time()
         for epoch in range(self.num_epochs):
-            print('Epoch {}/{}'.format(epoch + 1, self.num_epochs))
-            print('-' * 10)
+            self.logging('Epoch {}/{}'.format(epoch + 1, self.num_epochs))
+            self.logging('-' * 10)
             running_loss = 0.0
             training_total = 0
             for inputs, labels in self.data_loader.loader_train:
@@ -56,11 +64,12 @@ class TrainAndValidate:
                     outputs = torch.argmax(full_outputs.logits, dim=2)
                     loss = full_outputs.loss
                     one_hot_labels = labels['encoded_outputs_ids']
+                    running_loss += loss.item() * inputs['encoded_inputs_ids'].size(0)
                 else:
                     batch_len, outputs, one_hot_labels = self._boilerplate(inputs, labels)
                     loss = self.loss_fn(outputs, one_hot_labels)
+                    running_loss += loss.item() * inputs.size(0)
                 training_total += batch_len
-                running_loss += loss.item() * inputs['encoded_inputs_ids'].size(0)
                 # Backward pass
                 loss.backward()
                 self.optimizer.step()
@@ -68,10 +77,10 @@ class TrainAndValidate:
             # self.scheduler.step()
             epoch_acc = self.train_acc.compute()
             epoch_loss = running_loss / training_total
-            print('Train Loss: {:.4f} Acc: {:.4f}'.format(epoch_loss, epoch_acc))
-            print()
+            self.logging('Train Loss: {:.4f} Acc: {:.4f}'.format(epoch_loss, epoch_acc))
+            self.logging('')
         time_elapsed = time.time() - since
-        print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
+        self.logging('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
         self.persist_model()
 
     def validate(self, model_state='20211130-201153_state.pt'):
@@ -142,13 +151,24 @@ class TrainAndValidate:
             self.model_prefix = 'undefined'
 
     def persist_model(self):
-        now = dt.datetime.now()
-        state_filename = "{}-{}.pt".format(now.strftime("%Y%m%d-%H%M%S"), self.data_loader.dataset.name())
-        full_path = model_state_path(self.model_prefix) / state_filename
+        if not self.train_log_file:
+            self.train_log_file = naming(self.data_loader.dataset.name())
+        else:
+            self.train_log_file = self.train_log_file[:-3] + 'pt'
+        full_path = model_state_path(self.model_prefix) / self.train_log_file
         with open(full_path, 'w'):
             torch.save(self.model.state_dict(), full_path)
+        self.train_log_file = None
 
     def load_model(self, state_filename):
         full_path = model_state_path(self.model_prefix) / state_filename
         self.model.load_state_dict(torch.load(full_path))
         self.model.eval()
+
+    def logging(self, msg):
+        log_folder = model_state_path(self.model_prefix, log=True)
+        if not self.train_log_file:
+            self.train_log_file = naming(self.data_loader.dataset.name(), extension='txt')
+        with open(log_folder / self.train_log_file, 'a') as fp:
+            print(msg, file=fp)
+            print(msg)
