@@ -3,7 +3,8 @@ from pathlib import Path
 from datasets import IrisWrittenDataset,    \
                      IrisConcatDataset,     \
                      AbaloneWrittenDataset, \
-                     AbaloneConcatDataset
+                     AbaloneConcatDataset,  \
+                     IrisT5Dataset
 from loader import DataLoaderBuilder
 from train import TrainAndValidate
 from models import load_bert, load_t5, load_gpt2
@@ -23,6 +24,7 @@ def select_process_combination():
         10: ("gpt2", "iris-written"),
         11: ("gpt2", "abalone-concat"),
         12: ("gpt2", "abalone-written"),
+        13: ("t5", "iris-t5"),
         99: ("exit", "exit"),
     }
     print("What combination do you want?")
@@ -48,6 +50,8 @@ def main():
         ds = IrisWrittenDataset(iris_data_file, iris_data_file.parent, device)
     elif dataset == 'iris-concat':
         ds = IrisConcatDataset(iris_data_file, iris_data_file.parent, device)
+    elif dataset == 'iris-t5':
+        ds = IrisT5Dataset(iris_data_file, iris_data_file.parent, device)
     elif dataset == 'abalone-written':
         ds = AbaloneWrittenDataset(abalone_data_file, abalone_data_file.parent, device)
     elif dataset == 'abalone-concat':
@@ -70,6 +74,7 @@ def main():
     data_loader.build()
     tv = TrainAndValidate(data_loader, model_ft, num_epochs=75)
     tv.train()
+    # tv.validate(model_state='20211205-220049-iris-concat.pt')
 
 
 if __name__ == '__main__':

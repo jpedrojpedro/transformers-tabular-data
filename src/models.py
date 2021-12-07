@@ -44,18 +44,18 @@ def load_t5(num_classes, freeze=False):
     model_name = 't5-small'
     model_ft = T5ForConditionalGeneration.from_pretrained(model_name)
     tokenizer = T5Tokenizer.from_pretrained(model_name)
-    num_ftrs = model_ft.lm_head.in_features
-    model_ft.lm_head = nn.Linear(num_ftrs, num_classes)
-    if freeze:
-        # freezing all parameters
-        for param in model_ft.parameters():
-            param.requires_grad = False
-        # activating specific layers
-        for i in range(6):
-            for j in range(3):
-                model_ft.decoder.block[i].layer[j].layer_norm.requires_grad_(True)
-                model_ft.decoder.block[i].layer[j].dropout.requires_grad_(True)
-        model_ft.lm_head.requires_grad_(True)
+    # num_ftrs = model_ft.lm_head.in_features
+    # model_ft.lm_head = nn.Linear(num_ftrs, num_classes)
+    # if freeze:
+    #     # freezing all parameters
+    #     for param in model_ft.parameters():
+    #         param.requires_grad = False
+    #     # activating specific layers
+    #     for i in range(6):
+    #         for j in range(3):
+    #             model_ft.decoder.block[i].layer[j].layer_norm.requires_grad_(True)
+    #             model_ft.decoder.block[i].layer[j].dropout.requires_grad_(True)
+    #     model_ft.lm_head.requires_grad_(True)
     return model_ft, tokenizer
 
 

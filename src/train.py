@@ -45,10 +45,25 @@ class TrainAndValidate:
             running_loss = 0.0
             training_total = 0
             for inputs, labels in self.data_loader.loader_train:
-                batch_len, outputs, one_hot_labels = self._boilerplate(inputs, labels)
+                if self.model_prefix == 't5':
+                    full_outputs = self.model(
+                        input_ids=inputs['encoded_inputs_ids'],
+                        attention_mask=inputs['attention_mask_inputs'],
+                        labels=labels['encoded_outputs_ids'],
+                        decoder_attention_mask=labels['attention_mask_outputs'],
+                    )
+                    batch_len = inputs['encoded_inputs_ids'].size(0)
+                    outputs = full_outputs.logits
+                    loss = full_outputs.loss
+                    one_hot_labels = one_hot(
+                        labels['encoded_outputs_ids'],
+                        num_classes=outputs.size(2)
+                    )
+                else:
+                    batch_len, outputs, one_hot_labels = self._boilerplate(inputs, labels)
+                    loss = self.loss_fn(outputs, one_hot_labels)
                 training_total += batch_len
-                loss = self.loss_fn(outputs, one_hot_labels)
-                running_loss += loss.item() * inputs.size(0)
+                running_loss += loss.item() * inputs['encoded_inputs_ids'].size(0)
                 # Backward pass
                 loss.backward()
                 self.optimizer.step()
