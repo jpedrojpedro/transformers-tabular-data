@@ -78,9 +78,9 @@ def main():
     ds.tokenizer = tokenizer
     data_loader = DataLoaderBuilder(ds)
     data_loader.build()
-    tv = TrainAndValidate(data_loader, model_ft, num_epochs=75)
-    tv.train()
-    # tv.validate(model_state='20211205-220049-iris-concat.pt')
+    tv = TrainAndValidate(data_loader, model_ft, num_epochs=10)
+#     tv.train()
+    tv.validate(model_state='20211207-134546-iris-t5.pt')
 
 
 if __name__ == '__main__':
