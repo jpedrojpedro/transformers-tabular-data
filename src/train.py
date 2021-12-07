@@ -65,21 +65,20 @@ class TrainAndValidate:
     def validate(self, model_state='20211130-201153_state.pt'):
         self.load_model(model_state)
         since = time.time()
-        for epoch in range(self.num_epochs):
-            print('Epoch {}/{}'.format(epoch + 1, self.num_epochs))
-            print('-' * 10)
-            running_loss = 0.0
-            validation_total = 0
-            for inputs, labels in self.data_loader.loader_validation:
-                batch_len, outputs, one_hot_labels = self._boilerplate(inputs, labels)
-                validation_total += batch_len
-                loss = self.loss_fn(outputs, one_hot_labels)
-                running_loss += loss.item() * inputs.size(0)
-                self.val_acc(outputs, one_hot_labels.int())
-            epoch_acc = self.val_acc.compute()
-            epoch_loss = running_loss / validation_total
-            print('Validation Loss: {:.4f} Acc: {:.4f}'.format(epoch_loss, epoch_acc))
-            print()
+        print('Starting validation')
+        print('-' * 10)
+        running_loss = 0.0
+        validation_total = 0
+        for inputs, labels in self.data_loader.loader_validation:
+            batch_len, outputs, one_hot_labels = self._boilerplate(inputs, labels)
+            validation_total += batch_len
+            loss = self.loss_fn(outputs, one_hot_labels)
+            running_loss += loss.item() * inputs.size(0)
+            self.val_acc(outputs, one_hot_labels.int())
+        final_acc = self.val_acc.compute()
+        final_loss = running_loss / validation_total
+        print('Validation Loss: {:.4f} Acc: {:.4f}'.format(final_loss, final_acc))
+        print()
         time_elapsed = time.time() - since
         print('Validation complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 
