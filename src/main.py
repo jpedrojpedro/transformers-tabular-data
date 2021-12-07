@@ -5,6 +5,8 @@ from datasets import IrisWrittenDataset,    \
                      AbaloneWrittenDataset, \
                      AbaloneConcatDataset,  \
                      IrisT5Dataset
+
+from torch import nn
 from loader import DataLoaderBuilder
 from train import TrainAndValidate
 from models import load_bert, load_t5, load_gpt2
@@ -44,6 +46,8 @@ def main():
     datasets_folder = Path(__file__).parent.parent / "datasets"
     iris_data_file = datasets_folder / "iris" / "iris.data"
     abalone_data_file = datasets_folder / "abalone" / "abalone_str.data"
+    corona_data_file = datasets_folder / "corona" / "corona.data"
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if dataset == 'iris-written':
@@ -56,6 +60,8 @@ def main():
         ds = AbaloneWrittenDataset(abalone_data_file, abalone_data_file.parent, device)
     elif dataset == 'abalone-concat':
         ds = AbaloneConcatDataset(abalone_data_file, abalone_data_file.parent, device)
+    elif dataset == 'corona-concat':
+        ds = CoronaDataset(corona_data_file, corona_data_file.parent, device)
     else:
         raise FileNotFoundError("Invalid Dataset selection")
 
@@ -68,7 +74,7 @@ def main():
     else:
         raise ModuleNotFoundError("Invalid Model selection")
 
-    model_ft, tokenizer = model_fn(ds.num_classes(), freeze=True)
+    model_ft, tokenizer = model_fn(ds.num_classes(), freeze=False)
     ds.tokenizer = tokenizer
     data_loader = DataLoaderBuilder(ds)
     data_loader.build()
