@@ -145,6 +145,83 @@ class IrisT5Dataset(BaseDataset):
         ]
 
 
+class IrisT5WrittenDataset(BaseDataset):
+    def __init__(self,
+                 src_file,
+                 root_dir,
+                 device,
+                 max_encoded_len=128
+                 ):
+        super().__init__(src_file, root_dir, device, build_input_fn=None, max_encoded_len=max_encoded_len)
+
+    def __getitem__(self, idx):
+        if not self.tokenizer:
+            raise AssertionError("Tokenizer should be set")
+
+        task = 'multilabel classification:'
+        features_numeric = self.data[idx, :-1]
+        eng = engine()
+        features_str = [eng.number_to_words(str(round(float(i), 2))) for i in features_numeric]
+        features_full = [f"{feature} {features_str[idx]}" for idx, feature in enumerate(self.features())]
+        features_full = [task] + features_full
+        text = '  '.join(features_full)
+
+        encoded_inputs = self.tokenizer.encode_plus(
+            text,
+            max_length=self.max_encoded_len,
+            padding='max_length',
+            truncation=True,
+            return_attention_mask=True,
+            return_token_type_ids=False,
+            return_tensors='pt'
+        )
+
+        encoded_inputs_ids = encoded_inputs['input_ids'].squeeze()
+        attention_mask_inputs = encoded_inputs['attention_mask'].squeeze()
+
+        label_numeric = self.data[idx, -1:]
+        outputs = self.classes()[int(label_numeric[0])]
+        encoded_outputs = self.tokenizer.encode_plus(
+            outputs,
+            max_length=self.max_encoded_len,
+            padding='max_length',
+            truncation=True,
+            return_attention_mask=True,
+            return_token_type_ids=False,
+            return_tensors='pt'
+        )
+        encoded_outputs_ids = encoded_outputs['input_ids'].squeeze()
+        attention_mask_outputs = encoded_outputs['attention_mask'].squeeze()
+
+        final_inputs = {
+            'encoded_inputs_ids': encoded_inputs_ids,
+            'attention_mask_inputs': attention_mask_inputs,
+        }
+        final_outpus = {
+            'encoded_outputs_ids': encoded_outputs_ids,
+            'attention_mask_outputs': attention_mask_outputs
+        }
+        return final_inputs, final_outpus
+
+    def name(self):
+        return 'iris-t5-written'
+
+    def classes(self):
+        return [
+            'setosa',
+            'versicolour',
+            'virginica',
+        ]
+
+    def features(self):
+        return [
+            'sepal length',
+            'sepal width',
+            'petal length',
+            'petal width',
+        ]
+
+
 class IrisConcatDataset(BaseDataset):
     def __init__(self,
                  src_file,

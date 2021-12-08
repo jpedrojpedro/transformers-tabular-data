@@ -1,0 +1,41 @@
+Epoch 1/10
+----------
+Train Loss: 1.1088 Acc: 0.6667
+
+Epoch 2/10
+----------
+Train Loss: 1.0773 Acc: 0.6667
+
+Epoch 3/10
+----------
+Train Loss: 1.0118 Acc: 0.6667
+
+Epoch 4/10
+----------
+Train Loss: 0.9135 Acc: 0.6708
+
+Epoch 5/10
+----------
+Train Loss: 0.7764 Acc: 0.6939
+
+Epoch 6/10
+----------
+Train Loss: 0.6832 Acc: 0.7347
+
+Epoch 7/10
+----------
+Train Loss: 0.5820 Acc: 0.7647
+
+Epoch 8/10
+----------
+Train Loss: 0.5441 Acc: 0.7837
+
+Epoch 9/10
+----------
+Train Loss: 0.4581 Acc: 0.7994
+
+Epoch 10/10
+----------
+Train Loss: 0.4178 Acc: 0.8125
+
+Training complete in 4m 36s
