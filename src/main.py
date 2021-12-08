@@ -5,7 +5,8 @@ from datasets import IrisWrittenDataset,    \
                      AbaloneWrittenDataset, \
                      AbaloneConcatDataset,  \
                      IrisT5Dataset,         \
-                     IrisT5WrittenDataset
+                     IrisT5WrittenDataset,  \
+                     AbaloneT5Dataset
 from loader import DataLoaderBuilder
 from train import TrainAndValidate
 from models import load_bert, load_t5, load_gpt2
@@ -27,6 +28,7 @@ def select_process_combination():
         12: ("gpt2", "abalone-written"),
         13: ("t5", "iris-t5"),
         14: ("t5", "iris-t5-written"),
+        15: ("t5", "abalone-t5"),
         99: ("exit", "exit"),
     }
     print("What combination do you want?")
@@ -46,8 +48,8 @@ def main():
     datasets_folder = Path(__file__).parent.parent / "datasets"
     iris_data_file = datasets_folder / "iris" / "iris.data"
     abalone_data_file = datasets_folder / "abalone" / "abalone_str.data"
-    corona_data_file = datasets_folder / "corona" / "corona.data"
-    
+    abalone_mod_data_file = datasets_folder / "abalone" / "abalone_str_mod.data"
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if dataset == 'iris-written':
@@ -58,6 +60,8 @@ def main():
         ds = IrisT5Dataset(iris_data_file, iris_data_file.parent, device)
     elif dataset == 'iris-t5-written':
         ds = IrisT5WrittenDataset(iris_data_file, iris_data_file.parent, device)
+    elif dataset == 'abalone-t5':
+        ds = AbaloneT5Dataset(abalone_data_file, abalone_mod_data_file.parent, device)
     elif dataset == 'abalone-written':
         ds = AbaloneWrittenDataset(abalone_data_file, abalone_data_file.parent, device)
     elif dataset == 'abalone-concat':
@@ -78,7 +82,7 @@ def main():
     ds.tokenizer = tokenizer
     data_loader = DataLoaderBuilder(ds)
     data_loader.build()
-    tv = TrainAndValidate(data_loader, model_ft, num_epochs=10)
+    tv = TrainAndValidate(data_loader, model_ft, num_epochs=50)
     tv.train()
     # tv.validate(model_state='20211207-134546-iris-t5.pt')
 

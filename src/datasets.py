@@ -276,3 +276,61 @@ class AbaloneWrittenDataset(BaseDataset):
 
     def name(self):
         return 'abalone-written'
+
+
+class AbaloneT5Dataset(IrisT5Dataset):
+    def __init__(self,
+                 src_file,
+                 root_dir,
+                 device,
+                 max_encoded_len=128
+                 ):
+        super().__init__(src_file, root_dir, device, max_encoded_len=max_encoded_len)
+
+    def name(self):
+        return 'abalone-t5'
+
+    def classes(self):
+        return [
+            '1 year old',
+            '2 years old',
+            '3 years old',
+            '4 years old',
+            '5 years old',
+            '6 years old',
+            '7 years old',
+            '8 years old',
+            '9 years old',
+            '10 years old',
+            '11 years old',
+            '12 years old',
+            '13 years old',
+            '14 years old',
+            '15 years old',
+            '16 years old',
+            '17 years old',
+            '18 years old',
+            '19 years old',
+            '20 years old',
+            '21 years old',
+            '22 years old',
+            '23 years old',
+            '24 years old',
+            '25 years old',
+            '26 years old',
+            '27 years old',
+            '29 years old',
+        ]
+
+    def features(self):
+        return [
+            'sex',
+            'length',
+            'diameter',
+            'height',
+            'whole weight',
+            'shucked weight',
+            'viscera weight',
+            'shell weight',
+            # 'rings',  => value to be predicted
+        ]
