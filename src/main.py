@@ -48,7 +48,6 @@ def main():
     datasets_folder = Path(__file__).parent.parent / "datasets"
     iris_data_file = datasets_folder / "iris" / "iris.data"
     abalone_data_file = datasets_folder / "abalone" / "abalone_str.data"
-    abalone_mod_data_file = datasets_folder / "abalone" / "abalone_str_mod.data"
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -61,7 +60,7 @@ def main():
     elif dataset == 'iris-t5-written':
         ds = IrisT5WrittenDataset(iris_data_file, iris_data_file.parent, device)
     elif dataset == 'abalone-t5':
-        ds = AbaloneT5Dataset(abalone_data_file, abalone_mod_data_file.parent, device)
+        ds = AbaloneT5Dataset(abalone_data_file, abalone_data_file.parent, device)
     elif dataset == 'abalone-written':
         ds = AbaloneWrittenDataset(abalone_data_file, abalone_data_file.parent, device)
     elif dataset == 'abalone-concat':
