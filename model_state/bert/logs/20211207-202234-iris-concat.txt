@@ -1,0 +1,301 @@
+Epoch 1/75
+----------
+Train Loss: 1.1151 Acc: 0.6667
+
+Epoch 2/75
+----------
+Train Loss: 1.0792 Acc: 0.6667
+
+Epoch 3/75
+----------
+Train Loss: 1.0480 Acc: 0.6667
+
+Epoch 4/75
+----------
+Train Loss: 0.9403 Acc: 0.6667
+
+Epoch 5/75
+----------
+Train Loss: 0.8110 Acc: 0.6761
+
+Epoch 6/75
+----------
+Train Loss: 0.6778 Acc: 0.7134
+
+Epoch 7/75
+----------
+Train Loss: 0.6303 Acc: 0.7476
+
+Epoch 8/75
+----------
+Train Loss: 0.5565 Acc: 0.7736
+
+Epoch 9/75
+----------
+Train Loss: 0.4217 Acc: 0.7938
+
+Epoch 10/75
+----------
+Train Loss: 0.3808 Acc: 0.8100
+
+Epoch 11/75
+----------
+Train Loss: 0.3371 Acc: 0.8235
+
+Epoch 12/75
+----------
+Train Loss: 0.2963 Acc: 0.8345
+
+Epoch 13/75
+----------
+Train Loss: 0.2968 Acc: 0.8417
+
+Epoch 14/75
+----------
+Train Loss: 0.2630 Acc: 0.8492
+
+Epoch 15/75
+----------
+Train Loss: 0.3371 Acc: 0.8544
+
+Epoch 16/75
+----------
+Train Loss: 0.2491 Acc: 0.8595
+
+Epoch 17/75
+----------
+Train Loss: 0.2128 Acc: 0.8650
+
+Epoch 18/75
+----------
+Train Loss: 0.2406 Acc: 0.8664
+
+Epoch 19/75
+----------
+Train Loss: 0.2563 Acc: 0.8665
+
+Epoch 20/75
+----------
+Train Loss: 0.2284 Acc: 0.8674
+
+Epoch 21/75
+----------
+Train Loss: 0.2091 Acc: 0.8709
+
+Epoch 22/75
+----------
+Train Loss: 0.2610 Acc: 0.8716
+
+Epoch 23/75
+----------
+Train Loss: 0.2592 Acc: 0.8723
+
+Epoch 24/75
+----------
+Train Loss: 0.2275 Acc: 0.8759
+
+Epoch 25/75
+----------
+Train Loss: 0.2184 Acc: 0.8790
+
+Epoch 26/75
+----------
+Train Loss: 0.2504 Acc: 0.8796
+
+Epoch 27/75
+----------
+Train Loss: 0.3473 Acc: 0.8791
+
+Epoch 28/75
+----------
+Train Loss: 0.2278 Acc: 0.8788
+
+Epoch 29/75
+----------
+Train Loss: 0.2258 Acc: 0.8800
+
+Epoch 30/75
+----------
+Train Loss: 0.2521 Acc: 0.8826
+
+Epoch 31/75
+----------
+Train Loss: 0.2655 Acc: 0.8850
+
+Epoch 32/75
+----------
+Train Loss: 0.2635 Acc: 0.8869
+
+Epoch 33/75
+----------
+Train Loss: 0.3760 Acc: 0.8869
+
+Epoch 34/75
+----------
+Train Loss: 0.4938 Acc: 0.8864
+
+Epoch 35/75
+----------
+Train Loss: 0.2909 Acc: 0.8869
+
+Epoch 36/75
+----------
+Train Loss: 0.2540 Acc: 0.8889
+
+Epoch 37/75
+----------
+Train Loss: 0.2351 Acc: 0.8905
+
+Epoch 38/75
+----------
+Train Loss: 0.2367 Acc: 0.8904
+
+Epoch 39/75
+----------
+Train Loss: 0.3876 Acc: 0.8899
+
+Epoch 40/75
+----------
+Train Loss: 0.5266 Acc: 0.8894
+
+Epoch 41/75
+----------
+Train Loss: 0.4092 Acc: 0.8890
+
+Epoch 42/75
+----------
+Train Loss: 0.3139 Acc: 0.8886
+
+Epoch 43/75
+----------
+Train Loss: 0.2270 Acc: 0.8895
+
+Epoch 44/75
+----------
+Train Loss: 0.2240 Acc: 0.8910
+
+Epoch 45/75
+----------
+Train Loss: 0.2251 Acc: 0.8925
+
+Epoch 46/75
+----------
+Train Loss: 0.2256 Acc: 0.8938
+
+Epoch 47/75
+----------
+Train Loss: 0.2245 Acc: 0.8952
+
+Epoch 48/75
+----------
+Train Loss: 0.2263 Acc: 0.8964
+
+Epoch 49/75
+----------
+Train Loss: 0.2225 Acc: 0.8976
+
+Epoch 50/75
+----------
+Train Loss: 0.2227 Acc: 0.8988
+
+Epoch 51/75
+----------
+Train Loss: 0.2214 Acc: 0.8999
+
+Epoch 52/75
+----------
+Train Loss: 0.2197 Acc: 0.9010
+
+Epoch 53/75
+----------
+Train Loss: 0.2165 Acc: 0.9020
+
+Epoch 54/75
+----------
+Train Loss: 0.2156 Acc: 0.9020
+
+Epoch 55/75
+----------
+Train Loss: 0.2178 Acc: 0.9011
+
+Epoch 56/75
+----------
+Train Loss: 0.2173 Acc: 0.8997
+
+Epoch 57/75
+----------
+Train Loss: 0.2273 Acc: 0.8977
+
+Epoch 58/75
+----------
+Train Loss: 0.2286 Acc: 0.8957
+
+Epoch 59/75
+----------
+Train Loss: 0.2177 Acc: 0.8938
+
+Epoch 60/75
+----------
+Train Loss: 0.2204 Acc: 0.8919
+
+Epoch 61/75
+----------
+Train Loss: 0.2262 Acc: 0.8902
+
+Epoch 62/75
+----------
+Train Loss: 0.2291 Acc: 0.8884
+
+Epoch 63/75
+----------
+Train Loss: 0.2341 Acc: 0.8868
+
+Epoch 64/75
+----------
+Train Loss: 0.2333 Acc: 0.8852
+
+Epoch 65/75
+----------
+Train Loss: 0.2287 Acc: 0.8836
+
+Epoch 66/75
+----------
+Train Loss: 0.2242 Acc: 0.8821
+
+Epoch 67/75
+----------
+Train Loss: 0.2169 Acc: 0.8806
+
+Epoch 68/75
+----------
+Train Loss: 0.2101 Acc: 0.8792
+
+Epoch 69/75
+----------
+Train Loss: 0.2103 Acc: 0.8778
+
+Epoch 70/75
+----------
+Train Loss: 0.2053 Acc: 0.8764
+
+Epoch 71/75
+----------
+Train Loss: 0.2075 Acc: 0.8751
+
+Epoch 72/75
+----------
+Train Loss: 0.2075 Acc: 0.8738
+
+Epoch 73/75
+----------
+Train Loss: 0.2070 Acc: 0.8726
+
+Epoch 74/75
+----------
+Train Loss: 0.2122 Acc: 0.8714
+
+Epoch 75/75
+----------
+Train Loss: 0.2153 Acc: 0.8702
+
+Training complete in 5m 20s

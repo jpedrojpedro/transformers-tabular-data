@@ -1,0 +1,203 @@
+Some weights of GPT2ForSequenceClassification were not initialized from the model checkpoint at gpt2-medium and are newly initialized: ['score.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+Epoch 1/50
+----------
+Train Loss: 10.8073 Acc: 0.3889
+
+Epoch 2/50
+----------
+Train Loss: 7.6578 Acc: 0.4194
+
+Epoch 3/50
+----------
+Train Loss: 7.5607 Acc: 0.4296
+
+Epoch 4/50
+----------
+Train Loss: 7.3853 Acc: 0.4347
+
+Epoch 5/50
+----------
+Train Loss: 7.1531 Acc: 0.4378
+
+Epoch 6/50
+----------
+Train Loss: 6.8922 Acc: 0.4398
+
+Epoch 7/50
+----------
+Train Loss: 6.5773 Acc: 0.4413
+
+Epoch 8/50
+----------
+Train Loss: 6.1923 Acc: 0.4424
+
+Epoch 9/50
+----------
+Train Loss: 5.8179 Acc: 0.4432
+
+Epoch 10/50
+----------
+Train Loss: 5.3998 Acc: 0.4439
+
+Epoch 11/50
+----------
+Train Loss: 4.9751 Acc: 0.4444
+
+Epoch 12/50
+----------
+Train Loss: 4.4992 Acc: 0.4449
+
+Epoch 13/50
+----------
+Train Loss: 4.0080 Acc: 0.4453
+
+Epoch 14/50
+----------
+Train Loss: 3.5416 Acc: 0.4456
+
+Epoch 15/50
+----------
+Train Loss: 3.1361 Acc: 0.4459
+
+Epoch 16/50
+----------
+Train Loss: 2.7404 Acc: 0.4462
+
+Epoch 17/50
+----------
+Train Loss: 2.3433 Acc: 0.4464
+
+Epoch 18/50
+----------
+Train Loss: 1.9707 Acc: 0.4466
+
+Epoch 19/50
+----------
+Train Loss: 1.6432 Acc: 0.4472
+
+Epoch 20/50
+----------
+Train Loss: 1.3229 Acc: 0.4576
+
+Epoch 21/50
+----------
+Train Loss: 1.1574 Acc: 0.4676
+
+Epoch 22/50
+----------
+Train Loss: 1.1924 Acc: 0.4766
+
+Epoch 23/50
+----------
+Train Loss: 1.5999 Acc: 0.4822
+
+Epoch 24/50
+----------
+Train Loss: 2.1322 Acc: 0.4851
+
+Epoch 25/50
+----------
+Train Loss: 2.6244 Acc: 0.4877
+
+Epoch 26/50
+----------
+Train Loss: 3.0193 Acc: 0.4901
+
+Epoch 27/50
+----------
+Train Loss: 3.2936 Acc: 0.4923
+
+Epoch 28/50
+----------
+Train Loss: 3.4594 Acc: 0.4943
+
+Epoch 29/50
+----------
+Train Loss: 3.5258 Acc: 0.4963
+
+Epoch 30/50
+----------
+Train Loss: 3.5225 Acc: 0.4981
+
+Epoch 31/50
+----------
+Train Loss: 3.4588 Acc: 0.4997
+
+Epoch 32/50
+----------
+Train Loss: 3.3455 Acc: 0.5013
+
+Epoch 33/50
+----------
+Train Loss: 3.1959 Acc: 0.5028
+
+Epoch 34/50
+----------
+Train Loss: 2.9949 Acc: 0.5042
+
+Epoch 35/50
+----------
+Train Loss: 2.7820 Acc: 0.5055
+
+Epoch 36/50
+----------
+Train Loss: 2.5276 Acc: 0.5067
+
+Epoch 37/50
+----------
+Train Loss: 2.2600 Acc: 0.5079
+
+Epoch 38/50
+----------
+Train Loss: 1.9913 Acc: 0.5090
+
+Epoch 39/50
+----------
+Train Loss: 1.7328 Acc: 0.5101
+
+Epoch 40/50
+----------
+Train Loss: 1.5041 Acc: 0.5117
+
+Epoch 41/50
+----------
+Train Loss: 1.3008 Acc: 0.5156
+
+Epoch 42/50
+----------
+Train Loss: 1.1673 Acc: 0.5191
+
+Epoch 43/50
+----------
+Train Loss: 1.0882 Acc: 0.5225
+
+Epoch 44/50
+----------
+Train Loss: 1.0703 Acc: 0.5258
+
+Epoch 45/50
+----------
+Train Loss: 1.0783 Acc: 0.5290
+
+Epoch 46/50
+----------
+Train Loss: 1.1126 Acc: 0.5319
+
+Epoch 47/50
+----------
+Train Loss: 1.1556 Acc: 0.5348
+
+Epoch 48/50
+----------
+Train Loss: 1.2037 Acc: 0.5376
+
+Epoch 49/50
+----------
+Train Loss: 1.2623 Acc: 0.5409
+
+Epoch 50/50
+----------
+Train Loss: 1.3109 Acc: 0.5428
+
+Training complete in 17m 58s
