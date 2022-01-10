@@ -3,9 +3,9 @@ import numpy as np
 from torch.utils.data import Dataset
 from hashlib import md5
 from inflect import engine
+from random import shuffle
 
-
-def _normalizer(inputs, max_len=10, device=None):
+def _normalizer(inputs, max_len=16, device=None):
     complement = max_len - len(inputs)
     if complement <= 0:
         inputs = inputs[:max_len]
@@ -16,9 +16,53 @@ def _normalizer(inputs, max_len=10, device=None):
         inputs = inputs.to(device)
     return inputs
 
+###### (max, min) columns iris dataset ------ #######
+'''
+(7.9, 4.3)
+(4.4, 2.0)
+(6.9, 1.0)
+(2.5, 0.1)
+'''
+###### ------ #######
+
+
+# def concat_table_values(table_data, delimiter='  '):
+#     aux = [str(int(round(float(i), 2)*10)) for i in table_data]
+#     result = delimiter.join(aux)
+#     return result
+
+def create_intervals(aux):
+    col_min = [43, 20, 10, 1]
+    col_max = [79, 44, 69, 25]
+    col_names = ['sepal length', 'sepal width', 'petal length', 'petal width']
+    
+    new_aux = []
+    for i, value in enumerate(aux):
+        diff = col_max[int(i)] - col_min[int(i)]
+        factor = diff/5
+        num = int(value)
+        if num < col_min[i] + factor:
+            c = 'very low'
+        elif (num > col_min[i] + factor) & (num < col_min[i] + 2*factor):
+            c = 'little low'
+        elif (num > col_min[i] + 2*factor) & (num < col_min[i] + 3*factor):
+            c = 'in average'
+        elif (num > col_min[i] + 3*factor) & (num < col_min[i] + 4*factor):
+            c = 'little high'
+        else:
+            c = 'very high'        
+        
+        d = col_names[i] + ': ' + aux[i] + ' (' + c + ')'
+        new_aux.append(d)
+        
+    shuffle(new_aux)
+    delimiter = ', '
+    return delimiter.join(new_aux)
+
 
 def concat_table_values(table_data, delimiter='  '):
-    aux = [str(round(float(i), 2)) for i in table_data]
+    aux = [str(int(round(float(i), 2)*10)) for i in table_data]
+#     result = create_intervals(aux)
     result = delimiter.join(aux)
     return result
 
@@ -55,12 +99,21 @@ class BaseDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
         text = self.build_input_fn(self.data[idx, :-1])
+        
+#         print('\nRaw text:', text)
         encoded_inputs = self.tokenizer.encode(text, return_tensors='pt', padding=True)
+#         print('Encoded:', encoded_inputs)
+        decoded_inputs = [self.tokenizer.decode(i) for i in encoded_inputs] 
+#         print('Decoded:', decoded_inputs)
         encoded_inputs = torch.reshape(encoded_inputs, (-1,))
-        encoded_inputs = _normalizer(encoded_inputs, max_len=self.max_encoded_len)
-
+#         print('Encoded reshaped:', encoded_inputs)
+#         encoded_inputs = _normalizer(encoded_inputs, max_len=self.max_encoded_len)
+        encoded_inputs = _normalizer(encoded_inputs)
+#         print('Encoded normalized:', encoded_inputs)
         outputs = torch.tensor(self.data[idx, -1:], dtype=torch.long)
+#         print('Outputs:', outputs, '\n\n')
 
+        
         return encoded_inputs, outputs
 
     def name(self):
@@ -68,7 +121,10 @@ class BaseDataset(Dataset):
 
     def num_classes(self):
         return len(set([row[-1] for row in self.data]))
-
+    
+    def max_min_column(self, col):
+        return max([row[col] for row in self.data]), min([row[col] for row in self.data]) 
+        
 
 class IrisT5Dataset(BaseDataset):
     def __init__(self,
@@ -228,7 +284,7 @@ class IrisConcatDataset(BaseDataset):
                  root_dir,
                  device,
                  build_input_fn=concat_table_values,
-                 max_encoded_len=64
+                 max_encoded_len=16
                  ):
         super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
 
@@ -242,7 +298,7 @@ class IrisWrittenDataset(BaseDataset):
                  root_dir,
                  device,
                  build_input_fn=written_form_table_values,
-                 max_encoded_len=64
+                 max_encoded_len=16
                  ):
         super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
 
