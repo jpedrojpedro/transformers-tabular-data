@@ -3,12 +3,13 @@ from torch.utils.data import DataLoader, random_split
 
 
 class DataLoaderBuilder:
-    def __init__(self, dataset, train_percent=0.8, validation_percent=0.2):
+    def __init__(self, dataset, location_folder, train_percent=0.8, validation_percent=0.2):
         self.dataset = dataset
         self.train_size = None
         self.validation_size = None
         self.loader_train = None
         self.loader_validation = None
+        self.location_folder = location_folder
         self._validate_sizes(train_percent, validation_percent)
 
     def _validate_sizes(self, train_percent, validation_percent):
@@ -23,3 +24,14 @@ class DataLoaderBuilder:
         )
         self.loader_validation = DataLoader(iris_validation, batch_size=10, shuffle=True, drop_last=False)
         self.loader_train = DataLoader(iris_train, batch_size=24, shuffle=True, drop_last=False)
+        
+        import os
+        os.chdir(os.path.dirname(__file__))        
+        
+        
+        with open(self.location_folder + 'train.data', 'w') as f:
+            for x in self.loader_train:
+                f.write(str(x))
+        with open(self.location_folder + 'test.data', 'w') as f:
+            for x in self.loader_validation:
+                f.write(str(x))

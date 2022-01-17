@@ -83,19 +83,21 @@ def load_t0(num_classes, freeze=False):
 
 
 def load_gpt2(num_classes, freeze=False):
-    from transformers import GPT2Tokenizer, GPT2LMHeadModel, GPT2ForSequenceClassification, GPT2Config
+    from transformers import GPT2Tokenizer, GPT2ForSequenceClassification, GPT2Config
 
     model_name = 'gpt2-medium'
     model_ft = GPT2ForSequenceClassification.from_pretrained(model_name)
     tokenizer = GPT2Tokenizer.from_pretrained(model_name)
     num_ftrs = model_ft.score.in_features
     model_ft.score = nn.Linear(num_ftrs, num_classes)
-
+ 
     # model_config = GPT2Config.from_pretrained(pretrained_model_name_or_path=model_name, num_labels=num_classes)
-    # Adding padding left and right
-    tokenizer.padding_side = "left"
     tokenizer.pad_token = tokenizer.eos_token
 
+    # Adding padding left and right
+    tokenizer.padding_side = "left"
+#     tokenizer.add_special_tokens({'cls_token': '[CLS]'})
+    
     # Loading model
     # model_ft = GPT2ForSequenceClassification.from_pretrained(model_name)
     # model_ft.resize_token_embeddings(len(tokenizer))
@@ -106,8 +108,17 @@ def load_gpt2(num_classes, freeze=False):
         for param in model_ft.parameters():
             param.requires_grad = False
         # activating specific layers
+        model_ft.transformer.wte.requires_grad_(True)
+        model_ft.transformer.wpe.requires_grad_(True)
         for i in range(24):
             model_ft.transformer.h[i].ln_1.requires_grad_(True)
             model_ft.transformer.h[i].ln_2.requires_grad_(True)
+        model_ft.transformer.ln_f.requires_grad_(True)
         model_ft.score.requires_grad_(True)
+        
+#         for name, layer in model_ft.named_parameters():
+#             print(name)
+#             print(layer.requires_grad)
+#         exit()
+        
     return model_ft, tokenizer
