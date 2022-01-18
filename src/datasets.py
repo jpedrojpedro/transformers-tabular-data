@@ -162,53 +162,6 @@ class NewBaseDataset(Dataset):
         return max([row[col] for row in self.data]), min([row[col] for row in self.data])
 
 
-class BaseDataset(Dataset):
-    def __init__(self, src_file, root_dir, device, build_input_fn, max_encoded_len):
-        self.data = np.loadtxt(src_file, delimiter=",", skiprows=0)
-        self.root_dir = root_dir
-        self.device = device
-        self.tokenizer = None
-        self.build_input_fn = build_input_fn
-        self.max_encoded_len = max_encoded_len
-        self.classes = {0: 'setosa', 1: 'versicolour', 2: 'virginica'}
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        if not self.tokenizer:
-            raise AssertionError("Tokenizer should be set")
-
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-        text = self.build_input_fn(self.data[idx, :-1])
-
-#         print('Q:', text)
-        encoded_inputs = self.tokenizer.encode(text, return_tensors='pt', padding=True)
-#         print('Encoded:', encoded_inputs)
-        decoded_inputs = [self.tokenizer.decode(i) for i in encoded_inputs] 
-#         print('Decoded:', decoded_inputs)
-        encoded_inputs = torch.reshape(encoded_inputs, (-1,))
-#         print('Encoded reshaped:', encoded_inputs)
-        encoded_inputs = _normalizer(encoded_inputs, max_len=self.max_encoded_len)
-#         print('Encoded normalized:', encoded_inputs)
-        outputs = torch.tensor(self.data[idx, -1:], dtype=torch.long)
-#         print('A:', self.classes[int(outputs[0])], '\n')
-#         print('A:', int(outputs[0]), '\n')
-
-        return encoded_inputs, outputs
-
-    
-    def name(self):
-        raise NotImplementedError
-        
-    def num_classes(self):
-        return len(set([row[-1] for row in self.data]))
-    
-    def max_min_column(self, col):
-        return max([row[col] for row in self.data]), min([row[col] for row in self.data]) 
-        
-
 class IrisT5Dataset(NewBaseDataset):
     def __init__(self,
                  src_file,
@@ -276,36 +229,29 @@ class AbaloneT5Dataset(NewBaseDataset):
         return 'abalone-t5'
 
     def classes(self):
-        return [
-            '1 year old',
-            '2 years old',
-            '3 years old',
-            '4 years old',
-            '5 years old',
-            '6 years old',
-            '7 years old',
-            '8 years old',
-            '9 years old',
-            '10 years old',
-            '11 years old',
-            '12 years old',
-            '13 years old',
-            '14 years old',
-            '15 years old',
-            '16 years old',
-            '17 years old',
-            '18 years old',
-            '19 years old',
-            '20 years old',
-            '21 years old',
-            '22 years old',
-            '23 years old',
-            '24 years old',
-            '25 years old',
-            '26 years old',
-            '27 years old',
-            '29 years old',
-        ]
+        return {
+            3: '3 years old',
+            4: '4 years old',
+            5: '5 years old',
+            6: '6 years old',
+            7: '7 years old',
+            8: '8 years old',
+            9: '9 years old',
+            10: '10 years old',
+            11: '11 years old',
+            12: '12 years old',
+            13: '13 years old',
+            14: '14 years old',
+            15: '15 years old',
+            16: '16 years old',
+            17: '17 years old',
+            18: '18 years old',
+            19: '19 years old',
+            20: '20 years old',
+            21: '21 years old',
+            22: '22 years old',
+            23: '23 years old',
+        }
 
     def features(self):
         return [
