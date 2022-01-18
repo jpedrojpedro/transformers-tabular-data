@@ -8,21 +8,14 @@ from models import load_bert, load_t5, load_gpt2
 
 def select_process_combination():
     opts = {
-        # 1: ("bert", "iris-concat"),
-        # 2: ("bert", "iris-written"),
-        # 3: ("bert", "abalone-concat"),
-        # 4: ("bert", "abalone-written"),
-        # 5: ("t5", "iris-concat"),
-        # 6: ("t5", "iris-written"),
-        # 7: ("t5", "abalone-concat"),
-        # 8: ("t5", "abalone-written"),
+        1: ("bert", "iris-concat"),
+        3: ("bert", "abalone-concat"),
+
         # 9: ("gpt2", "iris-concat"),
-        # 10: ("gpt2", "iris-written"),
         # 11: ("gpt2", "abalone-concat"),
-        # 12: ("gpt2", "abalone-written"),
-        # 13: ("t5", "iris-t5"),
-        # 14: ("t5", "iris-t5-written"),
-        # 15: ("t5", "abalone-t5"),
+
+        13: ("t5", "iris-t5"),
+        15: ("t5", "abalone-t5"),
 
         80: ("bert", "adult-concat"),
         81: ("t5", "adult-concat"),
@@ -51,21 +44,19 @@ def main():
     datasets_folder = Path(__file__).parent.parent / "datasets"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # if dataset == 'iris-written':
-    #     ds = IrisWrittenDataset(iris_data_file, iris_data_file.parent, device)
-    # elif dataset == 'iris-concat':
-    #     ds = IrisConcatDataset(iris_data_file, iris_data_file.parent, device)
-    # elif dataset == 'iris-t5':
-    #     ds = IrisT5Dataset(iris_data_file, iris_data_file.parent, device)
-    # elif dataset == 'iris-t5-written':
-    #     ds = IrisT5WrittenDataset(iris_data_file, iris_data_file.parent, device)
-    # elif dataset == 'abalone-t5':
-    #     ds = AbaloneT5Dataset(abalone_data_file, abalone_data_file.parent, device)
-    # elif dataset == 'abalone-written':
-    #     ds = AbaloneWrittenDataset(abalone_data_file, abalone_data_file.parent, device)
-    # elif dataset == 'abalone-concat':
-    #     ds = AbaloneConcatDataset(abalone_data_file, abalone_data_file.parent, device)
-    if dataset == 'adult-concat':
+    if dataset == 'iris-concat':
+        ds_train = IrisConcatDataset(datasets_folder / "iris" / "iris_train.data", device)
+        ds_test = IrisConcatDataset(datasets_folder / "iris" / "iris_test.data", device)
+    elif dataset == 'iris-t5':
+        ds_train = IrisT5Dataset(datasets_folder / "iris" / "iris_train.data", device)
+        ds_test = IrisT5Dataset(datasets_folder / "iris" / "iris_test.data", device)
+    elif dataset == 'abalone-t5':
+        ds_train = AbaloneT5Dataset(datasets_folder / "abalone" / "abalone_train.data", device)
+        ds_test = AbaloneT5Dataset(datasets_folder / "abalone" / "abalone_test.data", device)
+    elif dataset == 'abalone-concat':
+        ds_train = AbaloneConcatDataset(datasets_folder / "abalone" / "abalone_train.data", device)
+        ds_test = AbaloneConcatDataset(datasets_folder / "abalone" / "abalone_test.data", device)
+    elif dataset == 'adult-concat':
         ds_train = AdultConcatDataset(datasets_folder / "adult" / "adult_train.data", device)
         ds_test = AdultConcatDataset(datasets_folder / "adult" / "adult_test.data", device)
     elif dataset == 'pulsar-concat':
@@ -85,6 +76,7 @@ def main():
 
     model_ft, tokenizer = model_fn(ds_train.num_classes(), freeze=True)
     ds_train.tokenizer = tokenizer
+    ds_test.tokenizer = tokenizer
     data_loader = SimpleDataLoaderBuilder(ds_train, ds_test)
     data_loader.build()
     tv = TrainAndValidate(data_loader, model_ft, num_epochs=50, learning_rate=1e-5)

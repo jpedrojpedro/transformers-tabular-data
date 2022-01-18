@@ -7,6 +7,70 @@ from inflect import engine
 from random import shuffle
 
 
+# __getitem__ implementations
+def getitem_text_to_label(idx, data, tokenizer, max_encoded_len, classes=None, features=None):
+    if torch.is_tensor(idx):
+        idx = idx.tolist()
+    text = concat_table_values(data[idx])[:-1].strip()
+    encoded_inputs = tokenizer.encode(text, return_tensors='pt', padding=True)
+    # decoded_inputs = [self.tokenizer.decode(i) for i in encoded_inputs]
+    encoded_inputs = torch.reshape(encoded_inputs, (-1,))
+    encoded_inputs = _normalizer(encoded_inputs, max_len=max_encoded_len)
+    if classes:
+        outputs = torch.tensor(classes[data[idx][-1].strip()], dtype=torch.long)
+    else:
+        outputs = torch.tensor(data[idx][-1], dtype=torch.long)
+
+    return encoded_inputs, outputs
+
+
+def getitem_text_to_text(idx, data, tokenizer, max_encoded_len, classes, features):
+    task = 'multilabel classification:'
+    features_numeric = data[idx, :-1]
+    # features_full = [f"{feature} {features_numeric[idx]}" for idx, feature in enumerate(features())]
+    features_full = [f"{feature} {int(features_numeric[idx] * 10)}" for idx, feature in enumerate(features())]
+    # print(features_full)
+    features_full = [task] + features_full
+    text = '  '.join(features_full)
+
+    encoded_inputs = tokenizer.encode_plus(
+        text,
+        max_length=max_encoded_len,
+        padding='max_length',
+        truncation=True,
+        return_attention_mask=True,
+        return_token_type_ids=False,
+        return_tensors='pt'
+    )
+
+    encoded_inputs_ids = encoded_inputs['input_ids'].squeeze()
+    attention_mask_inputs = encoded_inputs['attention_mask'].squeeze()
+
+    label_numeric = data[idx, -1:]
+    outputs = classes()[int(label_numeric[0])]
+    encoded_outputs = tokenizer.encode_plus(
+        outputs,
+        max_length=max_encoded_len,
+        padding='max_length',
+        truncation=True,
+        return_attention_mask=True,
+        return_token_type_ids=False,
+        return_tensors='pt'
+    )
+    encoded_outputs_ids = encoded_outputs['input_ids'].squeeze()
+    attention_mask_outputs = encoded_outputs['attention_mask'].squeeze()
+
+    final_inputs = {
+        'encoded_inputs_ids': encoded_inputs_ids,
+        'attention_mask_inputs': attention_mask_inputs,
+    }
+    final_outpus = {
+        'encoded_outputs_ids': encoded_outputs_ids,
+        'attention_mask_outputs': attention_mask_outputs
+    }
+    return final_inputs, final_outpus
+
+
 # methods to manipulate input data
 def _normalizer(inputs, max_len=10, device=None):
     complement = max_len - len(inputs)
@@ -72,6 +136,32 @@ def written_form_table_values(table_data, delimiter='  '):
 
 
 # classes to handle datasets
+class NewBaseDataset(Dataset):
+    def __init__(self, getitem_fn, src_file, device, max_encoded_len):
+        self.getitem_fn = getitem_fn
+        self.data = np.loadtxt(src_file, delimiter=",", skiprows=0)
+        self.device = device
+        self.tokenizer = None
+        self.max_encoded_len = max_encoded_len
+
+    def __getitem__(self, index):
+        if not self.tokenizer:
+            raise AssertionError("Tokenizer should be set")
+        return self.getitem_fn(index, self.data, self.tokenizer, self.max_encoded_len, self.classes, self.features)
+
+    def __len__(self):
+        return len(self.data)
+
+    def name(self):
+        raise NotImplementedError
+
+    def num_classes(self):
+        return len(set([row[-1] for row in self.data]))
+
+    def max_min_column(self, col):
+        return max([row[col] for row in self.data]), min([row[col] for row in self.data])
+
+
 class BaseDataset(Dataset):
     def __init__(self, src_file, root_dir, device, build_input_fn, max_encoded_len):
         self.data = np.loadtxt(src_file, delimiter=",", skiprows=0)
@@ -119,63 +209,14 @@ class BaseDataset(Dataset):
         return max([row[col] for row in self.data]), min([row[col] for row in self.data]) 
         
 
-class IrisT5Dataset(BaseDataset):
+class IrisT5Dataset(NewBaseDataset):
     def __init__(self,
                  src_file,
-                 root_dir,
                  device,
+                 getitem_fn=getitem_text_to_text,
                  max_encoded_len=128
                  ):
-        super().__init__(src_file, root_dir, device, build_input_fn=None, max_encoded_len=max_encoded_len)
-
-    def __getitem__(self, idx):
-        if not self.tokenizer:
-            raise AssertionError("Tokenizer should be set")
-
-        task = 'multilabel classification:'
-        features_numeric = self.data[idx, :-1]
-#         features_full = [f"{feature} {features_numeric[idx]}" for idx, feature in enumerate(self.features())]
-        features_full = [f"{feature} {int(features_numeric[idx]*10)}" for idx, feature in enumerate(self.features())]
-#         print(features_full)
-        features_full = [task] + features_full
-        text = '  '.join(features_full)
-
-        encoded_inputs = self.tokenizer.encode_plus(
-            text,
-            max_length=self.max_encoded_len,
-            padding='max_length',
-            truncation=True,
-            return_attention_mask=True,
-            return_token_type_ids=False,
-            return_tensors='pt'
-        )
-
-        encoded_inputs_ids = encoded_inputs['input_ids'].squeeze()
-        attention_mask_inputs = encoded_inputs['attention_mask'].squeeze()
-
-        label_numeric = self.data[idx, -1:]
-        outputs = self.classes()[int(label_numeric[0])]
-        encoded_outputs = self.tokenizer.encode_plus(
-            outputs,
-            max_length=self.max_encoded_len,
-            padding='max_length',
-            truncation=True,
-            return_attention_mask=True,
-            return_token_type_ids=False,
-            return_tensors='pt'
-        )
-        encoded_outputs_ids = encoded_outputs['input_ids'].squeeze()
-        attention_mask_outputs = encoded_outputs['attention_mask'].squeeze()
-
-        final_inputs = {
-            'encoded_inputs_ids': encoded_inputs_ids,
-            'attention_mask_inputs': attention_mask_inputs,
-        }
-        final_outpus = {
-            'encoded_outputs_ids': encoded_outputs_ids,
-            'attention_mask_outputs': attention_mask_outputs
-        }
-        return final_inputs, final_outpus
+        super().__init__(getitem_fn, src_file, device, max_encoded_len)
 
     def name(self):
         return 'iris-t5'
@@ -196,147 +237,40 @@ class IrisT5Dataset(BaseDataset):
         ]
 
 
-class IrisT5WrittenDataset(BaseDataset):
+class IrisConcatDataset(NewBaseDataset):
     def __init__(self,
                  src_file,
-                 root_dir,
                  device,
-                 max_encoded_len=128
-                 ):
-        super().__init__(src_file, root_dir, device, build_input_fn=None, max_encoded_len=max_encoded_len)
-
-    def __getitem__(self, idx):
-        if not self.tokenizer:
-            raise AssertionError("Tokenizer should be set")
-
-        task = 'multilabel classification:'
-        features_numeric = self.data[idx, :-1]
-        eng = engine()
-        features_str = [eng.number_to_words(str(round(float(i), 2))) for i in features_numeric]
-        features_full = [f"{feature} {features_str[idx]}" for idx, feature in enumerate(self.features())]
-        features_full = [task] + features_full
-        text = '  '.join(features_full)
-
-        encoded_inputs = self.tokenizer.encode_plus(
-            text,
-            max_length=self.max_encoded_len,
-            padding='max_length',
-            truncation=True,
-            return_attention_mask=True,
-            return_token_type_ids=False,
-            return_tensors='pt'
-        )
-
-        encoded_inputs_ids = encoded_inputs['input_ids'].squeeze()
-        attention_mask_inputs = encoded_inputs['attention_mask'].squeeze()
-
-        label_numeric = self.data[idx, -1:]
-        outputs = self.classes()[int(label_numeric[0])]
-        encoded_outputs = self.tokenizer.encode_plus(
-            outputs,
-            max_length=self.max_encoded_len,
-            padding='max_length',
-            truncation=True,
-            return_attention_mask=True,
-            return_token_type_ids=False,
-            return_tensors='pt'
-        )
-        encoded_outputs_ids = encoded_outputs['input_ids'].squeeze()
-        attention_mask_outputs = encoded_outputs['attention_mask'].squeeze()
-
-        final_inputs = {
-            'encoded_inputs_ids': encoded_inputs_ids,
-            'attention_mask_inputs': attention_mask_inputs,
-        }
-        final_outpus = {
-            'encoded_outputs_ids': encoded_outputs_ids,
-            'attention_mask_outputs': attention_mask_outputs
-        }
-        return final_inputs, final_outpus
-
-    def name(self):
-        return 'iris-t5-written'
-
-    def classes(self):
-        return [
-            'setosa',
-            'versicolour',
-            'virginica',
-        ]
-
-    def features(self):
-        return [
-            'sepal length',
-            'sepal width',
-            'petal length',
-            'petal width',
-        ]
-
-
-class IrisConcatDataset(BaseDataset):
-    def __init__(self,
-                 src_file,
-                 root_dir,
-                 device,
-                 build_input_fn=concat_table_values,
+                 getitem_fn=getitem_text_to_label,
                  max_encoded_len=64
                  ):
-        super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
+        super().__init__(getitem_fn, src_file, device, max_encoded_len)
 
     def name(self):
         return 'iris-concat'
 
 
-class IrisWrittenDataset(BaseDataset):
+class AbaloneConcatDataset(NewBaseDataset):
     def __init__(self,
                  src_file,
-                 root_dir,
                  device,
-                 build_input_fn=written_form_table_values,
-                 max_encoded_len=16
-                 ):
-        super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
-
-    def name(self):
-        return 'iris-written'
-
-
-class AbaloneConcatDataset(BaseDataset):
-    def __init__(self,
-                 src_file,
-                 root_dir,
-                 device,
-                 build_input_fn=concat_table_values,
+                 getitem_fn=getitem_text_to_label,
                  max_encoded_len=128
                  ):
-        super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
+        super().__init__(getitem_fn, src_file, device, max_encoded_len)
 
     def name(self):
         return 'abalone-concat'
 
 
-class AbaloneWrittenDataset(BaseDataset):
+class AbaloneT5Dataset(NewBaseDataset):
     def __init__(self,
                  src_file,
-                 root_dir,
                  device,
-                 build_input_fn=written_form_table_values,
+                 getitem_fn=getitem_text_to_text,
                  max_encoded_len=128
                  ):
-        super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
-
-    def name(self):
-        return 'abalone-written'
-
-
-class AbaloneT5Dataset(IrisT5Dataset):
-    def __init__(self,
-                 src_file,
-                 root_dir,
-                 device,
-                 max_encoded_len=128
-                 ):
-        super().__init__(src_file, root_dir, device, max_encoded_len=max_encoded_len)
+        super().__init__(getitem_fn, src_file, device, max_encoded_len)
 
     def name(self):
         return 'abalone-t5'
