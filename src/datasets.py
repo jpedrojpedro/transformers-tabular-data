@@ -1,3 +1,4 @@
+from abc import ABC
 import torch
 import numpy as np
 from torch.utils.data import Dataset
@@ -6,8 +7,7 @@ from inflect import engine
 from random import shuffle
 
 
-import pandas as pd
-
+# methods to manipulate input data
 def _normalizer(inputs, max_len=10, device=None):
     complement = max_len - len(inputs)
     if complement <= 0:
@@ -18,21 +18,6 @@ def _normalizer(inputs, max_len=10, device=None):
     if device:
         inputs = inputs.to(device)
     return inputs
-
-###### (max, min) columns iris dataset ------ #######
-'''
-(7.9, 4.3)
-(4.4, 2.0)
-(6.9, 1.0)
-(2.5, 0.1)
-'''
-###### ------ #######
-
-
-# def concat_table_values(table_data, delimiter='  '):
-#     aux = [str(int(round(float(i), 2)*10)) for i in table_data]
-#     result = delimiter.join(aux)
-#     return result
 
 
 def create_intervals(aux, col_min, col_max, col_names):
@@ -61,14 +46,14 @@ def create_intervals(aux, col_min, col_max, col_names):
 
 
 def concat_table_values(table_data, delimiter='  '):
-#     aux = [str(int(round(float(i), 2)*10)) for i in table_data]
+    # aux = [str(int(round(float(i), 2)*10)) for i in table_data]
     aux = [str(i) for i in table_data]
-    
-#     col_min = [43, 20, 10, 1]
-#     col_max = [79, 44, 69, 25]
-#     col_names = ['sepal length', 'sepal width', 'petal length', 'petal width']
-#     result = create_intervals(aux, col_min, col_max, col_names)
-    
+
+    # col_min = [43, 20, 10, 1]
+    # col_max = [79, 44, 69, 25]
+    # col_names = ['sepal length', 'sepal width', 'petal length', 'petal width']
+    # result = create_intervals(aux, col_min, col_max, col_names)
+
     result = delimiter.join(aux)
     return result
 
@@ -86,6 +71,7 @@ def written_form_table_values(table_data, delimiter='  '):
     return result
 
 
+# classes to handle datasets
 class BaseDataset(Dataset):
     def __init__(self, src_file, root_dir, device, build_input_fn, max_encoded_len):
         self.data = np.loadtxt(src_file, delimiter=",", skiprows=0)
@@ -400,26 +386,14 @@ class AbaloneT5Dataset(IrisT5Dataset):
             # 'rings',  => value to be predicted
         ]
 
-    
-# class TextDataset(Dataset):
-#     def __init__(self, src_file, root_dir, device, build_input_fn, max_encoded_len):
-# #         self.data = np.loadtxt(src_file, dtype={'names': ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N'),
-# #                                                 'formats': ('|S15', '|S15', '|S15', '|S15', '|S15', '|S15', '|S15', '|S15', 
-# #                                                             '|S15', '|S15', '|S15', '|S15', '|S15', '|S15', '|S15')},
-# #    delimiter=',', skiprows=0)
-#         self.data = np.loadtxt(src_file, delimiter=",", skiprows=0)
-# #         self.data = pd.read_csv(src_file, delimiter=",")
-    
-    
-class TextDataset(Dataset):
-    def __init__(self, src_file, root_dir, device, build_input_fn, max_encoded_len):
+
+class TextDataset(Dataset, ABC):
+    def __init__(self, src_file, device, build_input_fn, max_encoded_len):
         self.data = np.genfromtxt(src_file, dtype=None, delimiter=",", encoding='utf-8')
-        self.root_dir = root_dir
         self.device = device
         self.tokenizer = None
         self.build_input_fn = build_input_fn
         self.max_encoded_len = max_encoded_len
-#         self.classes = {0: 'setosa', 1: 'versicolour', 2: 'virginica'}
 
     def __len__(self):
         return len(self.data)
@@ -428,60 +402,69 @@ class TextDataset(Dataset):
         if not self.tokenizer:
             raise AssertionError("Tokenizer should be set")
 
+    def name(self):
+        raise NotImplementedError
+
+    def num_classes(self):
+        raise NotImplementedError
+
+
+class TextLabelDataset(TextDataset, ABC):
+    def __getitem__(self, idx):
+        super().__getitem__(idx)
         if torch.is_tensor(idx):
             idx = idx.tolist()
-            
         text = self.build_input_fn(self.data[idx])[:-1].strip()
-
-
-#         print('Q:', text)
         encoded_inputs = self.tokenizer.encode(text, return_tensors='pt', padding=True)
-#         print('Encoded:', encoded_inputs)
-        decoded_inputs = [self.tokenizer.decode(i) for i in encoded_inputs] 
-#         print('Decoded:', decoded_inputs)
+        # decoded_inputs = [self.tokenizer.decode(i) for i in encoded_inputs]
         encoded_inputs = torch.reshape(encoded_inputs, (-1,))
-#         print('Encoded reshaped:', encoded_inputs)
         encoded_inputs = _normalizer(encoded_inputs, max_len=self.max_encoded_len)
-#         print('Encoded normalized:', encoded_inputs)
-        outputs = torch.tensor(self.data[idx][-1], dtype=torch.long)
-#         print('A:', self.classes[int(outputs[0])], '\n')
-#         print('A:', outputs.item(), '\n')
+        outputs = torch.tensor(self.classes()[self.data[idx][-1].strip()], dtype=torch.long)
 
         return encoded_inputs, outputs
 
-    
-    def name(self):
+    def classes(self):
         raise NotImplementedError
-        
-    def num_classes(self):
-        return 3
-#         return 2
-#         return len(set([row[-1] for row in self.data]))
-    
 
-class AdultConcatDataset(TextDataset):
-    def __init__(self,
-                 src_file,
-                 root_dir,
-                 device,
-                 build_input_fn=concat_table_values,
-                 max_encoded_len=64
-                 ):
-        super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
+
+class NumericLabelDataset(TextDataset, ABC):
+    def __getitem__(self, idx):
+        super().__getitem__(idx)
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+        text = self.build_input_fn(self.data[idx])[:-1].strip()
+        encoded_inputs = self.tokenizer.encode(text, return_tensors='pt', padding=True)
+        # decoded_inputs = [self.tokenizer.decode(i) for i in encoded_inputs]
+        encoded_inputs = torch.reshape(encoded_inputs, (-1,))
+        encoded_inputs = _normalizer(encoded_inputs, max_len=self.max_encoded_len)
+        outputs = torch.tensor(self.data[idx][-1].strip(), dtype=torch.long)
+
+        return encoded_inputs, outputs
+
+
+class AdultConcatDataset(TextLabelDataset):
+    def __init__(self, src_file, device, build_input_fn=concat_table_values, max_encoded_len=64):
+        super().__init__(src_file, device, build_input_fn, max_encoded_len)
 
     def name(self):
         return 'adult-concat'
-    
-    
-class PulsarConcatDataset(BaseDataset):
-    def __init__(self,
-                 src_file,
-                 root_dir,
-                 device,
-                 build_input_fn=concat_table_values,
-                 max_encoded_len=40
-                 ):
-        super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
+
+    def num_classes(self):
+        return 2
+
+    def classes(self):
+        return {
+            "<=50K": 0,
+            ">50K": 1
+        }
+
+
+class PulsarConcatDataset(NumericLabelDataset):
+    def __init__(self, src_file, device, build_input_fn=concat_table_values, max_encoded_len=40):
+        super().__init__(src_file, device, build_input_fn, max_encoded_len)
 
     def name(self):
         return 'pulsar-concat'
+
+    def num_classes(self):
+        return 2
