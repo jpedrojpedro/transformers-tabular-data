@@ -198,6 +198,9 @@ class IrisConcatDataset(NewBaseDataset):
                  max_encoded_len=64
                  ):
         super().__init__(getitem_fn, src_file, device, max_encoded_len)
+        # FIXME: same name for method and attribute
+        self.classes = None
+        self.features = None
 
     def name(self):
         return 'iris-concat'
