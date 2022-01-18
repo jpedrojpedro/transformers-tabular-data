@@ -437,7 +437,7 @@ class NumericLabelDataset(TextDataset, ABC):
         # decoded_inputs = [self.tokenizer.decode(i) for i in encoded_inputs]
         encoded_inputs = torch.reshape(encoded_inputs, (-1,))
         encoded_inputs = _normalizer(encoded_inputs, max_len=self.max_encoded_len)
-        outputs = torch.tensor(self.data[idx][-1].strip(), dtype=torch.long)
+        outputs = torch.tensor(self.data[idx][-1], dtype=torch.long)
 
         return encoded_inputs, outputs
 
