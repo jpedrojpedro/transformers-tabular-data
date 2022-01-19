@@ -34,6 +34,10 @@ def select_process_combination():
     return opts[sel]
 
 
+# faltam acertar: 7
+
+
+
 def main():
     model, dataset = select_process_combination()
     if model == 'exit':

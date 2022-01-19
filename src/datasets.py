@@ -30,11 +30,10 @@ def getitem_text_to_label(idx, data, tokenizer, max_encoded_len, classes=None, f
 def getitem_text_to_text(idx, data, tokenizer, max_encoded_len, classes, features):
     task = 'multilabel classification:'
     
-    features_numeric = data[idx, :-1]
-#     features_numeric = data[idx].tolist()[:-1]
+#     features_numeric = data[idx, :-1]
+    features_numeric = data[idx].tolist()[:-1]
 #     features_full = [f"{feature} {features_numeric[idx]}" for idx, feature in enumerate(features())]
     features_full = [f"{feature} {int(features_numeric[idx] * 10)}" for idx, feature in enumerate(features())]
-    # print(features_full)
     features_full = [task] + features_full
     text = '  '.join(features_full)
 
@@ -51,10 +50,12 @@ def getitem_text_to_text(idx, data, tokenizer, max_encoded_len, classes, feature
     encoded_inputs_ids = encoded_inputs['input_ids'].squeeze()
     attention_mask_inputs = encoded_inputs['attention_mask'].squeeze()
 
-    label_numeric = data[idx, -1:]
+#     label_numeric = data[idx, -1:]
+    label_numeric = data[idx].tolist()[-1:]
     outputs = classes()[int(label_numeric[0])]
-#     label_numeric = data[idx].tolist()[-1:][0]
-#     outputs = classes()[label_numeric]
+#     outputs = classes()[label_numeric[0]]
+    
+    print(label_numeric)
     
     encoded_outputs = tokenizer.encode_plus(
         outputs,
@@ -313,55 +314,55 @@ class AbaloneConcatDataset(NewBaseDataset):
 
 
 
-class AbaloneT5Dataset(NewBaseDataset):
-    def __init__(self,
-                 src_file,
-                 device,
-                 getitem_fn=getitem_text_to_text,
-                 max_encoded_len=128
-                 ):
-        super().__init__(getitem_fn, src_file, device, max_encoded_len)
+# class AbaloneT5Dataset(NewBaseDataset):
+#     def __init__(self,
+#                  src_file,
+#                  device,
+#                  getitem_fn=getitem_text_to_text,
+#                  max_encoded_len=128
+#                  ):
+#         super().__init__(getitem_fn, src_file, device, max_encoded_len)
 
-    def name(self):
-        return 'abalone-t5'
+#     def name(self):
+#         return 'abalone-t5'
 
-    def classes(self):
-        return {
-            3: '3 years old',
-            4: '4 years old',
-            5: '5 years old',
-            6: '6 years old',
-            7: '7 years old',
-            8: '8 years old',
-            9: '9 years old',
-            10: '10 years old',
-            11: '11 years old',
-            12: '12 years old',
-            13: '13 years old',
-            14: '14 years old',
-            15: '15 years old',
-            16: '16 years old',
-            17: '17 years old',
-            18: '18 years old',
-            19: '19 years old',
-            20: '20 years old',
-            21: '21 years old',
-            22: '22 years old',
-            23: '23 years old',
-        }
+#     def classes(self):
+#         return {
+#             3: '3 years old',
+#             4: '4 years old',
+#             5: '5 years old',
+#             6: '6 years old',
+#             7: '7 years old',
+#             8: '8 years old',
+#             9: '9 years old',
+#             10: '10 years old',
+#             11: '11 years old',
+#             12: '12 years old',
+#             13: '13 years old',
+#             14: '14 years old',
+#             15: '15 years old',
+#             16: '16 years old',
+#             17: '17 years old',
+#             18: '18 years old',
+#             19: '19 years old',
+#             20: '20 years old',
+#             21: '21 years old',
+#             22: '22 years old',
+#             23: '23 years old',
+#         }
 
-    def features(self):
-        return [
-            'sex',
-            'length',
-            'diameter',
-            'height',
-            'whole weight',
-            'shucked weight',
-            'viscera weight',
-            'shell weight',
-            # 'rings',  => value to be predicted
-        ]
+#     def features(self):
+#         return [
+#             'sex',
+#             'length',
+#             'diameter',
+#             'height',
+#             'whole weight',
+#             'shucked weight',
+#             'viscera weight',
+#             'shell weight',
+#             # 'rings',  => value to be predicted
+#         ]
 
 
 class AdultConcatDataset(TextLabelDataset):
@@ -418,6 +419,7 @@ class AdultT5Dataset(NewBaseDataset):
             'native-country'
         ]
 
+    
 class PulsarConcatDataset(NumericLabelDataset):
     def __init__(self, src_file, device, build_input_fn=concat_table_values, max_encoded_len=40):
         super().__init__(src_file, device, build_input_fn, max_encoded_len)
@@ -457,4 +459,56 @@ class PulsarT5Dataset(NewBaseDataset):
             ' Standard deviation of the DM-SNR curve',
             ' Excess kurtosis of the DM-SNR curve', 
             ' Skewness of the DM-SNR curve'
+        ]
+    
+    
+    
+class AbaloneT5Dataset(NewBaseDataset):
+    def __init__(self,
+                 src_file,
+                 device,
+                 getitem_fn=getitem_text_to_text,
+                 max_encoded_len=128
+                 ):
+        super().__init__(getitem_fn, src_file, device, max_encoded_len)
+
+    def name(self):
+        return 'abalone-t5'
+
+    def classes(self):
+        return {
+            3: '3 years old',
+            4: '4 years old',
+            5: '5 years old',
+            6: '6 years old',
+            7: '7 years old',
+            8: '8 years old',
+            9: '9 years old',
+            10: '10 years old',
+            11: '11 years old',
+            12: '12 years old',
+            13: '13 years old',
+            14: '14 years old',
+            15: '15 years old',
+            16: '16 years old',
+            17: '17 years old',
+            18: '18 years old',
+            19: '19 years old',
+            20: '20 years old',
+            21: '21 years old',
+            22: '22 years old',
+            23: '23 years old',
+        }
+
+    def features(self):
+        return [
+            'sex',
+            'length',
+            'diameter',
+            'height',
+            'whole weight',
+            'shucked weight',
+            'viscera weight',
+            'shell weight',
+            # 'rings',  => value to be predicted
         ]
