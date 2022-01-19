@@ -34,10 +34,6 @@ def select_process_combination():
     return opts[sel]
 
 
-# faltam acertar: 7
-
-
-
 def main():
     model, dataset = select_process_combination()
     if model == 'exit':
@@ -92,8 +88,8 @@ def main():
     data_loader = SimpleDataLoaderBuilder(ds_train, ds_test)
     data_loader.build()
     tv = TrainAndValidate(data_loader, model_ft, num_epochs=50, learning_rate=1e-5)
-    tv.train()
-    # tv.validate(model_state='20211207-134546-iris-t5.pt')
+#     tv.train()
+    tv.validate(model_state='20220119-020420-iris-concat.pt')
 
 
 if __name__ == '__main__':
