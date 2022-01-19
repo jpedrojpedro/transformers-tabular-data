@@ -18,11 +18,11 @@ def select_process_combination():
         15: ("t5", "abalone-t5"),
 
         80: ("bert", "adult-concat"),
-        81: ("t5", "adult-concat"),
+        81: ("t5", "adult-t5"),
         82: ("gpt2", "adult-concat"),
 
         87: ("bert", "pulsar-concat"),
-        88: ("t5", "pulsar-concat"),
+        88: ("t5", "pulsar-t5"),
         89: ("gpt2", "pulsar-concat"),
 
         99: ("exit", "exit"),
@@ -50,18 +50,28 @@ def main():
     elif dataset == 'iris-t5':
         ds_train = IrisT5Dataset(datasets_folder / "iris" / "iris_train.data", device)
         ds_test = IrisT5Dataset(datasets_folder / "iris" / "iris_test.data", device)
-    elif dataset == 'abalone-t5':
-        ds_train = AbaloneT5Dataset(datasets_folder / "abalone" / "abalone_train.data", device)
-        ds_test = AbaloneT5Dataset(datasets_folder / "abalone" / "abalone_test.data", device)
+        
     elif dataset == 'abalone-concat':
         ds_train = AbaloneConcatDataset(datasets_folder / "abalone" / "abalone_train.data", device)
         ds_test = AbaloneConcatDataset(datasets_folder / "abalone" / "abalone_test.data", device)
+    elif dataset == 'abalone-t5':
+        ds_train = AbaloneT5Dataset(datasets_folder / "abalone" / "abalone_train.data", device)
+        ds_test = AbaloneT5Dataset(datasets_folder / "abalone" / "abalone_test.data", device)
+        
     elif dataset == 'adult-concat':
         ds_train = AdultConcatDataset(datasets_folder / "adult" / "adult_train.data", device)
         ds_test = AdultConcatDataset(datasets_folder / "adult" / "adult_test.data", device)
+    elif dataset == 'adult-t5':
+        ds_train = AdultT5Dataset(datasets_folder / "adult" / "adult_train.data", device)
+        ds_test = AdultT5Dataset(datasets_folder / "adult" / "adult_test.data", device)
+        
     elif dataset == 'pulsar-concat':
         ds_train = PulsarConcatDataset(datasets_folder / "pulsar" / "pulsar_train.data", device)
         ds_test = PulsarConcatDataset(datasets_folder / "pulsar" / "pulsar_test.data", device)
+    elif dataset == 'pulsar-t5':
+        ds_train = PulsarT5Dataset(datasets_folder / "pulsar" / "pulsar_train.data", device)
+        ds_test = PulsarT5Dataset(datasets_folder / "pulsar" / "pulsar_test.data", device)
+        
     else:
         raise FileNotFoundError("Invalid Dataset selection")
 
