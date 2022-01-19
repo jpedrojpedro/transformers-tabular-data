@@ -8,23 +8,21 @@ from models import load_bert, load_t5, load_gpt2
 
 def select_process_combination():
     opts = {
-        1: ("bert", "iris-concat"),
-        3: ("bert", "abalone-concat"),
+        1: ("bert", "iris text-to-label"),
+        2: ("bert", "abalone text-to-label"),
+        3: ("bert", "adult text-to-label"),
+        4: ("bert", "pulsar text-to-label"),
 
-        # 9: ("gpt2", "iris-concat"),
-        # 11: ("gpt2", "abalone-concat"),
-
-        13: ("t5", "iris-t5"),
-        15: ("t5", "abalone-t5"),
-
-        80: ("bert", "adult-concat"),
-        81: ("t5", "adult-t5"),
-        82: ("gpt2", "adult-concat"),
-
-        87: ("bert", "pulsar-concat"),
-        88: ("t5", "pulsar-t5"),
-        89: ("gpt2", "pulsar-concat"),
-
+        5: ("t5", "iris text-to-text"),
+        6: ("t5", "abalone text-to-text"),
+        7: ("t5", "adult text-to-text"),
+        8: ("t5", "pulsar text-to-text"),
+        
+        9: ("gpt2", "iris text-to-label"),
+        10: ("gpt2", "abalone text-to-label"),
+        11: ("gpt2", "adult text-to-label"),
+        12: ("gpt2", "pulsar text-to-label"),
+        
         99: ("exit", "exit"),
     }
     print("What combination do you want?")
@@ -44,31 +42,31 @@ def main():
     datasets_folder = Path(__file__).parent.parent / "datasets"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    if dataset == 'iris-concat':
+    if dataset == 'iris text-to-label':
         ds_train = IrisConcatDataset(datasets_folder / "iris" / "iris_train.data", device)
         ds_test = IrisConcatDataset(datasets_folder / "iris" / "iris_test.data", device)
-    elif dataset == 'iris-t5':
+    elif dataset == 'iris text-to-text':
         ds_train = IrisT5Dataset(datasets_folder / "iris" / "iris_train.data", device)
         ds_test = IrisT5Dataset(datasets_folder / "iris" / "iris_test.data", device)
         
-    elif dataset == 'abalone-concat':
+    elif dataset == 'abalone text-to-label':
         ds_train = AbaloneConcatDataset(datasets_folder / "abalone" / "abalone_train.data", device)
         ds_test = AbaloneConcatDataset(datasets_folder / "abalone" / "abalone_test.data", device)
-    elif dataset == 'abalone-t5':
+    elif dataset == 'abalone text-to-text':
         ds_train = AbaloneT5Dataset(datasets_folder / "abalone" / "abalone_train.data", device)
         ds_test = AbaloneT5Dataset(datasets_folder / "abalone" / "abalone_test.data", device)
         
-    elif dataset == 'adult-concat':
+    elif dataset == 'adult text-to-label':
         ds_train = AdultConcatDataset(datasets_folder / "adult" / "adult_train.data", device)
         ds_test = AdultConcatDataset(datasets_folder / "adult" / "adult_test.data", device)
-    elif dataset == 'adult-t5':
+    elif dataset == 'adult text-to-text':
         ds_train = AdultT5Dataset(datasets_folder / "adult" / "adult_train.data", device)
         ds_test = AdultT5Dataset(datasets_folder / "adult" / "adult_test.data", device)
         
-    elif dataset == 'pulsar-concat':
+    elif dataset == 'pulsar text-to-label':
         ds_train = PulsarConcatDataset(datasets_folder / "pulsar" / "pulsar_train.data", device)
         ds_test = PulsarConcatDataset(datasets_folder / "pulsar" / "pulsar_test.data", device)
-    elif dataset == 'pulsar-t5':
+    elif dataset == 'pulsar text-to-text':
         ds_train = PulsarT5Dataset(datasets_folder / "pulsar" / "pulsar_train.data", device)
         ds_test = PulsarT5Dataset(datasets_folder / "pulsar" / "pulsar_test.data", device)
         

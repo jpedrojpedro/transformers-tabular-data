@@ -376,8 +376,8 @@ class AdultConcatDataset(TextLabelDataset):
 
     def classes(self):
         return {
-            ' <=50K': 0,
-            ' >50K': 1
+            '<=50K': 0,
+            '>50K': 1
         }
 
     
