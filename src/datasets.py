@@ -77,6 +77,7 @@ def written_form_table_values(table_data, delimiter='  '):
 def getitem_text_to_label(idx, data, tokenizer, max_encoded_len, classes=None, features=None):
     if torch.is_tensor(idx):
         idx = idx.tolist()
+        
     text = concat_table_values(data[idx])[:-1].strip()
     encoded_inputs = tokenizer.encode(text, return_tensors='pt', padding=True)
     # decoded_inputs = [self.tokenizer.decode(i) for i in encoded_inputs]
@@ -97,7 +98,7 @@ def getitem_text_to_text(idx, data, tokenizer, max_encoded_len, classes, feature
     task = 'multilabel classification:'
     
     features_numeric = data[idx].tolist()[:-1]
-#     features_full = [f"{feature} {features_numeric[idx]}" for idx, feature in enumerate(features())]
+    features_full = [f"{feature} {features_numeric[idx]}" for idx, feature in enumerate(features())]
     features_full = [f"{feature} {int(features_numeric[idx] * 10)}" for idx, feature in enumerate(features())]
     features_full = [task] + features_full
     text = '  '.join(features_full)
@@ -146,8 +147,7 @@ def getitem_text_to_text(idx, data, tokenizer, max_encoded_len, classes, feature
 class BaseDataset(Dataset):
     def __init__(self, getitem_fn, src_file, device, max_encoded_len):
         self.getitem_fn = getitem_fn
-#         self.data = np.loadtxt(src_file, delimiter=",", skiprows=0)
-        self.data = np.genfromtxt(src_file, dtype=None, delimiter=",", encoding='utf-8')
+        self.data = np.genfromtxt(src_file, dtype=None, delimiter=",", encoding='utf-8', skip_header=0, names=True)
         self.device = device
         self.tokenizer = None
         self.max_encoded_len = max_encoded_len

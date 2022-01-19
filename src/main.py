@@ -43,32 +43,32 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if dataset == 'iris text-to-label':
-        ds_train = IrisConcatDataset(datasets_folder / "iris" / "iris_train.data", device)
-        ds_test = IrisConcatDataset(datasets_folder / "iris" / "iris_test.data", device)
+        ds_train = IrisConcatDataset(datasets_folder / "iris" / "iris_train.csv", device)
+        ds_test = IrisConcatDataset(datasets_folder / "iris" / "iris_test.csv", device)
     elif dataset == 'iris text-to-text':
-        ds_train = IrisT5Dataset(datasets_folder / "iris" / "iris_train.data", device)
-        ds_test = IrisT5Dataset(datasets_folder / "iris" / "iris_test.data", device)
+        ds_train = IrisT5Dataset(datasets_folder / "iris" / "iris_train.csv", device)
+        ds_test = IrisT5Dataset(datasets_folder / "iris" / "iris_test.csv", device)
         
     elif dataset == 'abalone text-to-label':
-        ds_train = AbaloneConcatDataset(datasets_folder / "abalone" / "abalone_train.data", device)
-        ds_test = AbaloneConcatDataset(datasets_folder / "abalone" / "abalone_test.data", device)
+        ds_train = AbaloneConcatDataset(datasets_folder / "abalone" / "abalone_train.csv", device)
+        ds_test = AbaloneConcatDataset(datasets_folder / "abalone" / "abalone_test.csv", device)
     elif dataset == 'abalone text-to-text':
-        ds_train = AbaloneT5Dataset(datasets_folder / "abalone" / "abalone_train.data", device)
-        ds_test = AbaloneT5Dataset(datasets_folder / "abalone" / "abalone_test.data", device)
+        ds_train = AbaloneT5Dataset(datasets_folder / "abalone" / "abalone_train.csv", device)
+        ds_test = AbaloneT5Dataset(datasets_folder / "abalone" / "abalone_test.csv", device)
         
     elif dataset == 'adult text-to-label':
-        ds_train = AdultConcatDataset(datasets_folder / "adult" / "adult_train.data", device)
-        ds_test = AdultConcatDataset(datasets_folder / "adult" / "adult_test.data", device)
+        ds_train = AdultConcatDataset(datasets_folder / "adult" / "adult_train.csv", device)
+        ds_test = AdultConcatDataset(datasets_folder / "adult" / "adult_test.csv", device)
     elif dataset == 'adult text-to-text':
-        ds_train = AdultT5Dataset(datasets_folder / "adult" / "adult_train.data", device)
-        ds_test = AdultT5Dataset(datasets_folder / "adult" / "adult_test.data", device)
-        
+        ds_train = AdultT5Dataset(datasets_folder / "adult" / "adult_train.csv", device)
+        ds_test = AdultT5Dataset(datasets_folder / "adult" / "adult_test.csv", device)
+       
     elif dataset == 'pulsar text-to-label':
-        ds_train = PulsarConcatDataset(datasets_folder / "pulsar" / "pulsar_train.data", device)
-        ds_test = PulsarConcatDataset(datasets_folder / "pulsar" / "pulsar_test.data", device)
+        ds_train = PulsarConcatDataset(datasets_folder / "pulsar" / "pulsar_train.csv", device)
+        ds_test = PulsarConcatDataset(datasets_folder / "pulsar" / "pulsar_test.csv", device)        
     elif dataset == 'pulsar text-to-text':
-        ds_train = PulsarT5Dataset(datasets_folder / "pulsar" / "pulsar_train.data", device)
-        ds_test = PulsarT5Dataset(datasets_folder / "pulsar" / "pulsar_test.data", device)
+        ds_train = PulsarT5Dataset(datasets_folder / "pulsar" / "pulsar_train.csv", device)
+        ds_test = PulsarT5Dataset(datasets_folder / "pulsar" / "pulsar_test.csv", device)
         
     else:
         raise FileNotFoundError("Invalid Dataset selection")
@@ -88,8 +88,8 @@ def main():
     data_loader = SimpleDataLoaderBuilder(ds_train, ds_test)
     data_loader.build()
     tv = TrainAndValidate(data_loader, model_ft, num_epochs=50, learning_rate=1e-5)
-#     tv.train()
-    tv.validate(model_state='20220119-020420-iris-concat.pt')
+    tv.train()
+#     tv.validate(model_state='20220119-020420-iris-concat.pt')
 
 
 if __name__ == '__main__':
