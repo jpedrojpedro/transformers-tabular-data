@@ -35,6 +35,8 @@ class TrainAndValidate:
                  learning_rate=1e-5
                  ):
         self.data_loader = data_loader
+        self.data_train = self.data_loader.loader_train
+        self.num_classes = self.data_loader.train_dataset.num_classes()
         self.model = model
         self._set_model_prefix()
         self.loss_fn = loss_fn()
@@ -50,9 +52,11 @@ class TrainAndValidate:
         for epoch in range(self.num_epochs):
             self.logging('Epoch {}/{}'.format(epoch + 1, self.num_epochs))
             self.logging('-' * 10)
-            running_loss = 0.0
-            training_total = 0
-            for inputs, labels in self.data_loader.loader_train:
+            
+            len_total = 0
+            loss_total = 0.0
+            for inputs, labels in self.data_train:
+                len_total += len(inputs)
                 if self.model_prefix == 't5':
                     full_outputs = self.model(
                         input_ids=inputs['encoded_inputs_ids'],
@@ -60,25 +64,32 @@ class TrainAndValidate:
                         labels=labels['encoded_outputs_ids'],
                         decoder_attention_mask=labels['attention_mask_outputs'],
                     )
-                    batch_len = inputs['encoded_inputs_ids'].size(0)
-                    outputs = torch.argmax(full_outputs.logits, dim=2)
+                    y_pred = torch.argmax(full_outputs.logits, dim=2)
                     loss = full_outputs.loss
-                    one_hot_labels = labels['encoded_outputs_ids']
-                    running_loss += loss.item() * inputs['encoded_inputs_ids'].size(0)
+                    y_true_one_hot = labels['encoded_outputs_ids']
+                    loss_total += loss.item() * inputs['encoded_inputs_ids'].size(0)
+                
                 else:
-                    batch_len, outputs, one_hot_labels = self._boilerplate(inputs, labels)
-                    loss = self.loss_fn(outputs, one_hot_labels)
-                    running_loss += loss.item() * inputs.size(0)
-                training_total += batch_len
+                    y_pred = self.model(inputs.long()).logits
+
+                    y_true_one_hot = one_hot(labels, num_classes=self.num_classes)
+                    y_true_one_hot = torch.squeeze(y_true_one_hot).float()
+
+                    loss = self.loss_fn(y_pred, y_true_one_hot)
+                    loss_total += loss.item() * len(inputs)
+
+                self.train_acc(y_pred, y_true_one_hot.int())
                 # Backward pass
                 loss.backward()
                 self.optimizer.step()
-                self.train_acc(outputs, one_hot_labels.int())
-            # self.scheduler.step()
-            epoch_acc = self.train_acc.compute()
-            epoch_loss = running_loss / training_total
+
+            epoch_acc = self.train_acc.compute()            
+            epoch_loss = loss_total / len_total
+            
             self.logging('Train Loss: {:.4f} Acc: {:.4f}'.format(epoch_loss, epoch_acc))
             self.logging('')
+        
+        # Total time
         time_elapsed = time.time() - since
         self.logging('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
         self.persist_model()
@@ -86,11 +97,11 @@ class TrainAndValidate:
     def validate(self, model_state='20211130-201153_state.pt'):
         self.load_model(model_state)
         since = time.time()
-        print('Starting validation')
+        print('Starting test')
         print('-' * 10)
         running_loss = 0.0
-        validation_total = 0
-        for inputs, labels in self.data_loader.loader_validation:
+        test_total = 0
+        for inputs, labels in self.data_loader.loader_test:
             if self.model_prefix == 't5':
                 full_outputs = self.model(
                     input_ids=inputs['encoded_inputs_ids'],
@@ -108,32 +119,22 @@ class TrainAndValidate:
             else:
                 batch_len, outputs, one_hot_labels = self._boilerplate(inputs, labels)
                 loss = self.loss_fn(outputs, one_hot_labels)
-            validation_total += batch_len
+            test_total += batch_len
             running_loss += loss.item() * inputs['encoded_inputs_ids'].size(0)
             self.val_acc(outputs, one_hot_labels.int())
         final_acc = self.val_acc.compute()
-        final_loss = running_loss / validation_total
+        final_loss = running_loss / test_total
         print('Validation Loss: {:.4f} Acc: {:.4f}'.format(final_loss, final_acc))
         print()
         time_elapsed = time.time() - since
         print('Validation complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 
-    def _boilerplate(self, inputs, labels):
+    def _boilerplate(self, inputs, labels, train=True):
         batch_len = len(inputs)
-        one_hot_labels = one_hot(labels, num_classes=self.data_loader.dataset.num_classes())
-        one_hot_labels = torch.squeeze(one_hot_labels)
-
-        if 'bert' in self.model_prefix:
-            one_hot_labels = one_hot_labels.float()
-            outputs = self.model(inputs.long()).logits
-        elif 't5' == self.model_prefix or 't0' == self.model_prefix:
-            one_hot_labels = one_hot_labels.long()
-            outputs = self.model(input_ids=inputs.long(), labels=one_hot_labels).logits
-        elif 'transformer' == self.model_prefix or 'gpt2' == self.model_prefix:
-            one_hot_labels = one_hot_labels.float()
-            outputs = self.model(inputs.long()).logits
-        else:
-            raise NotImplementedError('Undefined model')
+        # FIXME: train and test must have the same number of classes
+        one_hot_labels = one_hot(labels, num_classes=self.data_loader.train_dataset.num_classes())
+        one_hot_labels = torch.squeeze(one_hot_labels).float()
+        outputs = self.model(inputs.long()).logits
 
         return batch_len, outputs, one_hot_labels
 
@@ -152,7 +153,7 @@ class TrainAndValidate:
 
     def persist_model(self):
         if not self.train_log_file:
-            self.train_log_file = naming(self.data_loader.dataset.name())
+            self.train_log_file = naming(self.data_loader.train_dataset.name())
         else:
             self.train_log_file = self.train_log_file[:-3] + 'pt'
         full_path = model_state_path(self.model_prefix) / self.train_log_file
@@ -168,7 +169,7 @@ class TrainAndValidate:
     def logging(self, msg):
         log_folder = model_state_path(self.model_prefix, log=True)
         if not self.train_log_file:
-            self.train_log_file = naming(self.data_loader.dataset.name(), extension='txt')
+            self.train_log_file = naming(self.data_loader.train_dataset.name(), extension='txt')
         with open(log_folder / self.train_log_file, 'a') as fp:
             print(msg, file=fp)
             print(msg)

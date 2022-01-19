@@ -1,3 +1,4 @@
+from abc import ABC
 import torch
 import numpy as np
 from torch.utils.data import Dataset
@@ -6,8 +7,79 @@ from inflect import engine
 from random import shuffle
 
 
-import pandas as pd
+# __getitem__ implementations
+def getitem_text_to_label(idx, data, tokenizer, max_encoded_len, classes=None, features=None):
+    if torch.is_tensor(idx):
+        idx = idx.tolist()
+    text = concat_table_values(data[idx])[:-1].strip()
+    encoded_inputs = tokenizer.encode(text, return_tensors='pt', padding=True)
+    # decoded_inputs = [self.tokenizer.decode(i) for i in encoded_inputs]
+    encoded_inputs = torch.reshape(encoded_inputs, (-1,))
+    encoded_inputs = _normalizer(encoded_inputs, max_len=max_encoded_len)
+    if classes:
+        try:
+            outputs = torch.tensor(classes[data[idx][-1].strip()], dtype=torch.long)
+        except:
+            outputs = torch.tensor(classes()[data[idx][-1]], dtype=torch.long)
+    else:
+        outputs = torch.tensor(data[idx][-1], dtype=torch.long)
 
+    return encoded_inputs, outputs
+
+
+def getitem_text_to_text(idx, data, tokenizer, max_encoded_len, classes, features):
+    task = 'multilabel classification:'
+    
+    features_numeric = data[idx, :-1]
+#     features_numeric = data[idx].tolist()[:-1]
+#     features_full = [f"{feature} {features_numeric[idx]}" for idx, feature in enumerate(features())]
+    features_full = [f"{feature} {int(features_numeric[idx] * 10)}" for idx, feature in enumerate(features())]
+    # print(features_full)
+    features_full = [task] + features_full
+    text = '  '.join(features_full)
+
+    encoded_inputs = tokenizer.encode_plus(
+        text,
+        max_length=max_encoded_len,
+        padding='max_length',
+        truncation=True,
+        return_attention_mask=True,
+        return_token_type_ids=False,
+        return_tensors='pt'
+    )
+
+    encoded_inputs_ids = encoded_inputs['input_ids'].squeeze()
+    attention_mask_inputs = encoded_inputs['attention_mask'].squeeze()
+
+    label_numeric = data[idx, -1:]
+    outputs = classes()[int(label_numeric[0])]
+#     label_numeric = data[idx].tolist()[-1:][0]
+#     outputs = classes()[label_numeric]
+    
+    encoded_outputs = tokenizer.encode_plus(
+        outputs,
+        max_length=max_encoded_len,
+        padding='max_length',
+        truncation=True,
+        return_attention_mask=True,
+        return_token_type_ids=False,
+        return_tensors='pt'
+    )
+    encoded_outputs_ids = encoded_outputs['input_ids'].squeeze()
+    attention_mask_outputs = encoded_outputs['attention_mask'].squeeze()
+
+    final_inputs = {
+        'encoded_inputs_ids': encoded_inputs_ids,
+        'attention_mask_inputs': attention_mask_inputs,
+    }
+    final_outpus = {
+        'encoded_outputs_ids': encoded_outputs_ids,
+        'attention_mask_outputs': attention_mask_outputs
+    }
+    return final_inputs, final_outpus
+
+
+# methods to manipulate input data
 def _normalizer(inputs, max_len=10, device=None):
     complement = max_len - len(inputs)
     if complement <= 0:
@@ -18,21 +90,6 @@ def _normalizer(inputs, max_len=10, device=None):
     if device:
         inputs = inputs.to(device)
     return inputs
-
-###### (max, min) columns iris dataset ------ #######
-'''
-(7.9, 4.3)
-(4.4, 2.0)
-(6.9, 1.0)
-(2.5, 0.1)
-'''
-###### ------ #######
-
-
-# def concat_table_values(table_data, delimiter='  '):
-#     aux = [str(int(round(float(i), 2)*10)) for i in table_data]
-#     result = delimiter.join(aux)
-#     return result
 
 
 def create_intervals(aux, col_min, col_max, col_names):
@@ -61,14 +118,14 @@ def create_intervals(aux, col_min, col_max, col_names):
 
 
 def concat_table_values(table_data, delimiter='  '):
-#     aux = [str(int(round(float(i), 2)*10)) for i in table_data]
+    # aux = [str(int(round(float(i), 2)*10)) for i in table_data]
     aux = [str(i) for i in table_data]
-    
-#     col_min = [43, 20, 10, 1]
-#     col_max = [79, 44, 69, 25]
-#     col_names = ['sepal length', 'sepal width', 'petal length', 'petal width']
-#     result = create_intervals(aux, col_min, col_max, col_names)
-    
+
+    # col_min = [43, 20, 10, 1]
+    # col_max = [79, 44, 69, 25]
+    # col_names = ['sepal length', 'sepal width', 'petal length', 'petal width']
+    # result = create_intervals(aux, col_min, col_max, col_names)
+
     result = delimiter.join(aux)
     return result
 
@@ -86,15 +143,41 @@ def written_form_table_values(table_data, delimiter='  '):
     return result
 
 
-class BaseDataset(Dataset):
-    def __init__(self, src_file, root_dir, device, build_input_fn, max_encoded_len):
-        self.data = np.loadtxt(src_file, delimiter=",", skiprows=0)
-        self.root_dir = root_dir
+# classes to handle datasets
+class NewBaseDataset(Dataset):
+    def __init__(self, getitem_fn, src_file, device, max_encoded_len):
+        self.getitem_fn = getitem_fn
+#         self.data = np.loadtxt(src_file, delimiter=",", skiprows=0)
+        self.data = np.genfromtxt(src_file, dtype=None, delimiter=",", encoding='utf-8')
+        self.device = device
+        self.tokenizer = None
+        self.max_encoded_len = max_encoded_len
+
+    def __getitem__(self, index):
+        if not self.tokenizer:
+            raise AssertionError("Tokenizer should be set")
+        return self.getitem_fn(index, self.data, self.tokenizer, self.max_encoded_len, self.classes, self.features)
+
+    def __len__(self):
+        return len(self.data)
+
+    def name(self):
+        raise NotImplementedError
+
+    def num_classes(self):
+        return len(set([row[-1] for row in self.data]))
+
+    def max_min_column(self, col):
+        return max([row[col] for row in self.data]), min([row[col] for row in self.data])
+
+
+class TextDataset(Dataset, ABC):
+    def __init__(self, src_file, device, build_input_fn, max_encoded_len):
+        self.data = np.genfromtxt(src_file, dtype=None, delimiter=",", encoding='utf-8')
         self.device = device
         self.tokenizer = None
         self.build_input_fn = build_input_fn
         self.max_encoded_len = max_encoded_len
-        self.classes = {0: 'setosa', 1: 'versicolour', 2: 'virginica'}
 
     def __len__(self):
         return len(self.data)
@@ -103,93 +186,54 @@ class BaseDataset(Dataset):
         if not self.tokenizer:
             raise AssertionError("Tokenizer should be set")
 
+    def name(self):
+        raise NotImplementedError
+
+    def num_classes(self):
+        raise NotImplementedError
+
+
+class TextLabelDataset(TextDataset, ABC):
+    def __getitem__(self, idx):
+        super().__getitem__(idx)
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        text = self.build_input_fn(self.data[idx, :-1])
-
-#         print('Q:', text)
+        text = self.build_input_fn(self.data[idx])[:-1].strip()
         encoded_inputs = self.tokenizer.encode(text, return_tensors='pt', padding=True)
-#         print('Encoded:', encoded_inputs)
-        decoded_inputs = [self.tokenizer.decode(i) for i in encoded_inputs] 
-#         print('Decoded:', decoded_inputs)
+        # decoded_inputs = [self.tokenizer.decode(i) for i in encoded_inputs]
         encoded_inputs = torch.reshape(encoded_inputs, (-1,))
-#         print('Encoded reshaped:', encoded_inputs)
         encoded_inputs = _normalizer(encoded_inputs, max_len=self.max_encoded_len)
-#         print('Encoded normalized:', encoded_inputs)
-        outputs = torch.tensor(self.data[idx, -1:], dtype=torch.long)
-#         print('A:', self.classes[int(outputs[0])], '\n')
-#         print('A:', int(outputs[0]), '\n')
+        outputs = torch.tensor(self.classes()[self.data[idx][-1].strip()], dtype=torch.long)
 
         return encoded_inputs, outputs
 
-    
-    def name(self):
+    def classes(self):
         raise NotImplementedError
-        
-    def num_classes(self):
-        return len(set([row[-1] for row in self.data]))
-    
-    def max_min_column(self, col):
-        return max([row[col] for row in self.data]), min([row[col] for row in self.data]) 
-        
 
-class IrisT5Dataset(BaseDataset):
+
+class NumericLabelDataset(TextDataset, ABC):
+    def __getitem__(self, idx):
+        super().__getitem__(idx)
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+        text = self.build_input_fn(self.data[idx])[:-1].strip()
+        encoded_inputs = self.tokenizer.encode(text, return_tensors='pt', padding=True)
+        # decoded_inputs = [self.tokenizer.decode(i) for i in encoded_inputs]
+        encoded_inputs = torch.reshape(encoded_inputs, (-1,))
+        encoded_inputs = _normalizer(encoded_inputs, max_len=self.max_encoded_len)
+        outputs = torch.tensor(self.data[idx][-1], dtype=torch.long)
+
+        return encoded_inputs, outputs
+    
+    
+class IrisT5Dataset(NewBaseDataset):
     def __init__(self,
                  src_file,
-                 root_dir,
                  device,
+                 getitem_fn=getitem_text_to_text,
                  max_encoded_len=128
                  ):
-        super().__init__(src_file, root_dir, device, build_input_fn=None, max_encoded_len=max_encoded_len)
-
-    def __getitem__(self, idx):
-        if not self.tokenizer:
-            raise AssertionError("Tokenizer should be set")
-
-        task = 'multilabel classification:'
-        features_numeric = self.data[idx, :-1]
-#         features_full = [f"{feature} {features_numeric[idx]}" for idx, feature in enumerate(self.features())]
-        features_full = [f"{feature} {int(features_numeric[idx]*10)}" for idx, feature in enumerate(self.features())]
-#         print(features_full)
-        features_full = [task] + features_full
-        text = '  '.join(features_full)
-
-        encoded_inputs = self.tokenizer.encode_plus(
-            text,
-            max_length=self.max_encoded_len,
-            padding='max_length',
-            truncation=True,
-            return_attention_mask=True,
-            return_token_type_ids=False,
-            return_tensors='pt'
-        )
-
-        encoded_inputs_ids = encoded_inputs['input_ids'].squeeze()
-        attention_mask_inputs = encoded_inputs['attention_mask'].squeeze()
-
-        label_numeric = self.data[idx, -1:]
-        outputs = self.classes()[int(label_numeric[0])]
-        encoded_outputs = self.tokenizer.encode_plus(
-            outputs,
-            max_length=self.max_encoded_len,
-            padding='max_length',
-            truncation=True,
-            return_attention_mask=True,
-            return_token_type_ids=False,
-            return_tensors='pt'
-        )
-        encoded_outputs_ids = encoded_outputs['input_ids'].squeeze()
-        attention_mask_outputs = encoded_outputs['attention_mask'].squeeze()
-
-        final_inputs = {
-            'encoded_inputs_ids': encoded_inputs_ids,
-            'attention_mask_inputs': attention_mask_inputs,
-        }
-        final_outpus = {
-            'encoded_outputs_ids': encoded_outputs_ids,
-            'attention_mask_outputs': attention_mask_outputs
-        }
-        return final_inputs, final_outpus
+        super().__init__(getitem_fn, src_file, device, max_encoded_len)
 
     def name(self):
         return 'iris-t5'
@@ -210,182 +254,101 @@ class IrisT5Dataset(BaseDataset):
         ]
 
 
-class IrisT5WrittenDataset(BaseDataset):
+class IrisConcatDataset(NewBaseDataset):
     def __init__(self,
                  src_file,
-                 root_dir,
                  device,
-                 max_encoded_len=128
-                 ):
-        super().__init__(src_file, root_dir, device, build_input_fn=None, max_encoded_len=max_encoded_len)
-
-    def __getitem__(self, idx):
-        if not self.tokenizer:
-            raise AssertionError("Tokenizer should be set")
-
-        task = 'multilabel classification:'
-        features_numeric = self.data[idx, :-1]
-        eng = engine()
-        features_str = [eng.number_to_words(str(round(float(i), 2))) for i in features_numeric]
-        features_full = [f"{feature} {features_str[idx]}" for idx, feature in enumerate(self.features())]
-        features_full = [task] + features_full
-        text = '  '.join(features_full)
-
-        encoded_inputs = self.tokenizer.encode_plus(
-            text,
-            max_length=self.max_encoded_len,
-            padding='max_length',
-            truncation=True,
-            return_attention_mask=True,
-            return_token_type_ids=False,
-            return_tensors='pt'
-        )
-
-        encoded_inputs_ids = encoded_inputs['input_ids'].squeeze()
-        attention_mask_inputs = encoded_inputs['attention_mask'].squeeze()
-
-        label_numeric = self.data[idx, -1:]
-        outputs = self.classes()[int(label_numeric[0])]
-        encoded_outputs = self.tokenizer.encode_plus(
-            outputs,
-            max_length=self.max_encoded_len,
-            padding='max_length',
-            truncation=True,
-            return_attention_mask=True,
-            return_token_type_ids=False,
-            return_tensors='pt'
-        )
-        encoded_outputs_ids = encoded_outputs['input_ids'].squeeze()
-        attention_mask_outputs = encoded_outputs['attention_mask'].squeeze()
-
-        final_inputs = {
-            'encoded_inputs_ids': encoded_inputs_ids,
-            'attention_mask_inputs': attention_mask_inputs,
-        }
-        final_outpus = {
-            'encoded_outputs_ids': encoded_outputs_ids,
-            'attention_mask_outputs': attention_mask_outputs
-        }
-        return final_inputs, final_outpus
-
-    def name(self):
-        return 'iris-t5-written'
-
-    def classes(self):
-        return [
-            'setosa',
-            'versicolour',
-            'virginica',
-        ]
-
-    def features(self):
-        return [
-            'sepal length',
-            'sepal width',
-            'petal length',
-            'petal width',
-        ]
-
-
-class IrisConcatDataset(BaseDataset):
-    def __init__(self,
-                 src_file,
-                 root_dir,
-                 device,
-                 build_input_fn=concat_table_values,
+                 getitem_fn=getitem_text_to_label,
                  max_encoded_len=64
                  ):
-        super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
+        super().__init__(getitem_fn, src_file, device, max_encoded_len)
+        # FIXME: same name for method and attribute
+        self.classes = None
+        self.features = None
 
     def name(self):
         return 'iris-concat'
 
 
-class IrisWrittenDataset(BaseDataset):
+class AbaloneConcatDataset(NewBaseDataset):
     def __init__(self,
                  src_file,
-                 root_dir,
                  device,
-                 build_input_fn=written_form_table_values,
-                 max_encoded_len=16
+                 getitem_fn=getitem_text_to_label,
+                 max_encoded_len=64
                  ):
-        super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
-
-    def name(self):
-        return 'iris-written'
-
-
-class AbaloneConcatDataset(BaseDataset):
-    def __init__(self,
-                 src_file,
-                 root_dir,
-                 device,
-                 build_input_fn=concat_table_values,
-                 max_encoded_len=128
-                 ):
-        super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
-
+        super().__init__(getitem_fn, src_file, device, max_encoded_len)
+        self.features = None
+        
     def name(self):
         return 'abalone-concat'
 
+    def num_classes(self):
+        return len(self.classes())
 
-class AbaloneWrittenDataset(BaseDataset):
+    def classes(self):
+        return {
+            3: 0,
+            4: 1,
+            5: 2,
+            6: 3,
+            7: 4,
+            8: 5,
+            9: 6,
+            10: 7,
+            11: 8,
+            12: 9,
+            13: 10,
+            14: 11,
+            15: 12,
+            16: 13,
+            17: 14,
+            18: 15,
+            19: 16,
+            20: 17,
+            21: 18,
+            22: 19,
+            23: 20,
+        }
+
+
+
+class AbaloneT5Dataset(NewBaseDataset):
     def __init__(self,
                  src_file,
-                 root_dir,
                  device,
-                 build_input_fn=written_form_table_values,
+                 getitem_fn=getitem_text_to_text,
                  max_encoded_len=128
                  ):
-        super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
-
-    def name(self):
-        return 'abalone-written'
-
-
-class AbaloneT5Dataset(IrisT5Dataset):
-    def __init__(self,
-                 src_file,
-                 root_dir,
-                 device,
-                 max_encoded_len=128
-                 ):
-        super().__init__(src_file, root_dir, device, max_encoded_len=max_encoded_len)
+        super().__init__(getitem_fn, src_file, device, max_encoded_len)
 
     def name(self):
         return 'abalone-t5'
 
     def classes(self):
-        return [
-            '1 year old',
-            '2 years old',
-            '3 years old',
-            '4 years old',
-            '5 years old',
-            '6 years old',
-            '7 years old',
-            '8 years old',
-            '9 years old',
-            '10 years old',
-            '11 years old',
-            '12 years old',
-            '13 years old',
-            '14 years old',
-            '15 years old',
-            '16 years old',
-            '17 years old',
-            '18 years old',
-            '19 years old',
-            '20 years old',
-            '21 years old',
-            '22 years old',
-            '23 years old',
-            '24 years old',
-            '25 years old',
-            '26 years old',
-            '27 years old',
-            '29 years old',
-        ]
+        return {
+            3: '3 years old',
+            4: '4 years old',
+            5: '5 years old',
+            6: '6 years old',
+            7: '7 years old',
+            8: '8 years old',
+            9: '9 years old',
+            10: '10 years old',
+            11: '11 years old',
+            12: '12 years old',
+            13: '13 years old',
+            14: '14 years old',
+            15: '15 years old',
+            16: '16 years old',
+            17: '17 years old',
+            18: '18 years old',
+            19: '19 years old',
+            20: '20 years old',
+            21: '21 years old',
+            22: '22 years old',
+            23: '23 years old',
+        }
 
     def features(self):
         return [
@@ -400,88 +363,98 @@ class AbaloneT5Dataset(IrisT5Dataset):
             # 'rings',  => value to be predicted
         ]
 
-    
-# class TextDataset(Dataset):
-#     def __init__(self, src_file, root_dir, device, build_input_fn, max_encoded_len):
-# #         self.data = np.loadtxt(src_file, dtype={'names': ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N'),
-# #                                                 'formats': ('|S15', '|S15', '|S15', '|S15', '|S15', '|S15', '|S15', '|S15', 
-# #                                                             '|S15', '|S15', '|S15', '|S15', '|S15', '|S15', '|S15')},
-# #    delimiter=',', skiprows=0)
-#         self.data = np.loadtxt(src_file, delimiter=",", skiprows=0)
-# #         self.data = pd.read_csv(src_file, delimiter=",")
-    
-    
-class TextDataset(Dataset):
-    def __init__(self, src_file, root_dir, device, build_input_fn, max_encoded_len):
-        self.data = np.genfromtxt(src_file, dtype=None, delimiter=",", encoding='utf-8')
-        self.root_dir = root_dir
-        self.device = device
-        self.tokenizer = None
-        self.build_input_fn = build_input_fn
-        self.max_encoded_len = max_encoded_len
-#         self.classes = {0: 'setosa', 1: 'versicolour', 2: 'virginica'}
 
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        if not self.tokenizer:
-            raise AssertionError("Tokenizer should be set")
-
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-            
-        text = self.build_input_fn(self.data[idx])[:-1].strip()
-
-
-#         print('Q:', text)
-        encoded_inputs = self.tokenizer.encode(text, return_tensors='pt', padding=True)
-#         print('Encoded:', encoded_inputs)
-        decoded_inputs = [self.tokenizer.decode(i) for i in encoded_inputs] 
-#         print('Decoded:', decoded_inputs)
-        encoded_inputs = torch.reshape(encoded_inputs, (-1,))
-#         print('Encoded reshaped:', encoded_inputs)
-        encoded_inputs = _normalizer(encoded_inputs, max_len=self.max_encoded_len)
-#         print('Encoded normalized:', encoded_inputs)
-        outputs = torch.tensor(self.data[idx][-1], dtype=torch.long)
-#         print('A:', self.classes[int(outputs[0])], '\n')
-#         print('A:', outputs.item(), '\n')
-
-        return encoded_inputs, outputs
-
-    
-    def name(self):
-        raise NotImplementedError
-        
-    def num_classes(self):
-        return 3
-#         return 2
-#         return len(set([row[-1] for row in self.data]))
-    
-
-class AdultConcatDataset(TextDataset):
-    def __init__(self,
-                 src_file,
-                 root_dir,
-                 device,
-                 build_input_fn=concat_table_values,
-                 max_encoded_len=64
-                 ):
-        super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
+class AdultConcatDataset(TextLabelDataset):
+    def __init__(self, src_file, device, build_input_fn=concat_table_values, max_encoded_len=64):
+        super().__init__(src_file, device, build_input_fn, max_encoded_len)
 
     def name(self):
         return 'adult-concat'
+
+    def num_classes(self):
+        return 2
+
+    def classes(self):
+        return {
+            ' <=50K': 0,
+            ' >50K': 1
+        }
+
     
-    
-class PulsarConcatDataset(BaseDataset):
+class AdultT5Dataset(NewBaseDataset):
     def __init__(self,
                  src_file,
-                 root_dir,
                  device,
-                 build_input_fn=concat_table_values,
-                 max_encoded_len=40
+                 getitem_fn=getitem_text_to_text,
+                 max_encoded_len=128
                  ):
-        super().__init__(src_file, root_dir, device, build_input_fn, max_encoded_len)
+        super().__init__(getitem_fn, src_file, device, max_encoded_len)
+
+    def name(self):
+        return 'adult-t5'
+
+
+    def classes(self):
+        return {
+            " <=50K": 0,
+            " >50K": 1
+        }
+    
+    def features(self):
+        return [
+            'age',
+            'workclass',
+            'fnlwgt',
+            'education',
+            'education-num',
+            'marital-status',
+            'occupation',
+            'relationship',
+            'race',
+            'sex',
+            'capital-gain',
+            'capital-loss',
+            'hours-per-week',
+            'native-country'
+        ]
+
+class PulsarConcatDataset(NumericLabelDataset):
+    def __init__(self, src_file, device, build_input_fn=concat_table_values, max_encoded_len=40):
+        super().__init__(src_file, device, build_input_fn, max_encoded_len)
 
     def name(self):
         return 'pulsar-concat'
+
+    def num_classes(self):
+        return 2
+
+    
+class PulsarT5Dataset(NewBaseDataset):
+    def __init__(self,
+                 src_file,
+                 device,
+                 getitem_fn=getitem_text_to_text,
+                 max_encoded_len=128
+                 ):
+        super().__init__(getitem_fn, src_file, device, max_encoded_len)
+
+    def name(self):
+        return 'pulsar-t5'
+
+    def classes(self):
+        return [
+            '0',
+            '1',
+        ]
+
+    def features(self):
+        return [
+            ' Mean of the integrated profile',
+            ' Standard deviation of the integrated profile',
+            ' Excess kurtosis of the integrated profile',
+            ' Skewness of the integrated profile', 
+            ' Mean of the DM-SNR curve',
+            ' Standard deviation of the DM-SNR curve',
+            ' Excess kurtosis of the DM-SNR curve', 
+            ' Skewness of the DM-SNR curve'
+        ]
