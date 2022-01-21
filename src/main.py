@@ -41,34 +41,53 @@ def main():
 
     datasets_folder = Path(__file__).parent.parent / "datasets"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+    
+    perc = 1 # percentil of data in training_set
+    
     if dataset == 'iris text-to-label':
-        ds_train = IrisConcatDataset(datasets_folder / "iris" / "iris_train.csv", device)
-        ds_test = IrisConcatDataset(datasets_folder / "iris" / "iris_test.csv", device)
+        train_string = "iris_train_perc" + str(perc) + ".csv"
+        ds_train = IrisConcatDataset(datasets_folder / "iris" / str(perc) / train_string, device)
+        test_string = "iris_test_perc" + str(perc) + ".csv"
+        ds_test = IrisConcatDataset(datasets_folder / "iris" / str(perc) / test_string, device)
     elif dataset == 'iris text-to-text':
-        ds_train = IrisT5Dataset(datasets_folder / "iris" / "iris_train.csv", device)
-        ds_test = IrisT5Dataset(datasets_folder / "iris" / "iris_test.csv", device)
+        train_string = "iris_train_perc" + str(perc) + ".csv"
+        ds_train = IrisT5Dataset(datasets_folder / "iris" / str(perc) / train_string, device)
+        test_string = "iris_test_perc" + str(perc) + ".csv"
+        ds_test = IrisT5Dataset(datasets_folder / "iris" / str(perc) / test_string, device)
         
     elif dataset == 'abalone text-to-label':
-        ds_train = AbaloneConcatDataset(datasets_folder / "abalone" / "abalone_train.csv", device)
-        ds_test = AbaloneConcatDataset(datasets_folder / "abalone" / "abalone_test.csv", device)
+        train_string = "abalone_train_perc" + str(perc) + ".csv"
+        ds_train = AbaloneConcatDataset(datasets_folder / "abalone" / str(perc) / train_string, device)
+        test_string = "abalone_test_perc" + str(perc) + ".csv"
+        ds_test = AbaloneConcatDataset(datasets_folder / "abalone" / str(perc) / test_string, device)
     elif dataset == 'abalone text-to-text':
-        ds_train = AbaloneT5Dataset(datasets_folder / "abalone" / "abalone_train.csv", device)
-        ds_test = AbaloneT5Dataset(datasets_folder / "abalone" / "abalone_test.csv", device)
+        train_string = "abalone_train_perc" + str(perc) + ".csv"
+        ds_train = AbaloneT5Dataset(datasets_folder / "abalone" / str(perc) / train_string, device)
+        test_string = "abalone_test_perc" + str(perc) + ".csv"
+        ds_test = AbaloneT5Dataset(datasets_folder / "abalone" / str(perc) / test_string, device)
         
     elif dataset == 'adult text-to-label':
-        ds_train = AdultConcatDataset(datasets_folder / "adult" / "adult_train.csv", device)
-        ds_test = AdultConcatDataset(datasets_folder / "adult" / "adult_test.csv", device)
+        train_string = "adult_train_perc" + str(perc) + ".csv"
+        ds_train = AdultConcatDataset(datasets_folder / "adult" / str(perc) / train_string, device)
+        test_string = "adult_test_perc" + str(perc) + ".csv"
+        ds_test = AdultConcatDataset(datasets_folder / "adult" / str(perc) / test_string, device)
+        test_string = "adult_test_perc" + str(perc) + ".csv"
     elif dataset == 'adult text-to-text':
-        ds_train = AdultT5Dataset(datasets_folder / "adult" / "adult_train.csv", device)
-        ds_test = AdultT5Dataset(datasets_folder / "adult" / "adult_test.csv", device)
+        train_string = "adult_train_perc" + str(perc) + ".csv"
+        ds_train = AdultT5Dataset(datasets_folder / "adult" / str(perc) / train_string, device)
+        test_string = "adult_test_perc" + str(perc) + ".csv"
+        ds_test = AdultT5Dataset(datasets_folder / "adult" / str(perc) / test_string, device)
        
     elif dataset == 'pulsar text-to-label':
-        ds_train = PulsarConcatDataset(datasets_folder / "pulsar" / "pulsar_train.csv", device)
-        ds_test = PulsarConcatDataset(datasets_folder / "pulsar" / "pulsar_test.csv", device)        
+        train_string = "pulsar_train_perc" + str(perc) + ".csv"
+        ds_train = PulsarConcatDataset(datasets_folder / "pulsar" / str(perc) / train_string, device)
+        test_string = "pulsar_test_perc" + str(perc) + ".csv"
+        ds_test = PulsarConcatDataset(datasets_folder / "pulsar" / str(perc) / test_string, device)        
     elif dataset == 'pulsar text-to-text':
-        ds_train = PulsarT5Dataset(datasets_folder / "pulsar" / "pulsar_train.csv", device)
-        ds_test = PulsarT5Dataset(datasets_folder / "pulsar" / "pulsar_test.csv", device)
+        train_string = "pulsar_train_perc" + str(perc) + ".csv"
+        ds_train = PulsarT5Dataset(datasets_folder / "pulsar" / str(perc) / train_string, device)
+        test_string = "pulsar_test_perc" + str(perc) + ".csv"
+        ds_test = PulsarT5Dataset(datasets_folder / "pulsar" / str(perc) / test_string, device)
         
     else:
         raise FileNotFoundError("Invalid Dataset selection")
