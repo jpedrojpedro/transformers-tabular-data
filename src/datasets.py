@@ -77,7 +77,7 @@ def written_form_table_values(table_data, delimiter='  '):
 def getitem_text_to_label(idx, data, tokenizer, max_encoded_len, classes=None, features=None):
     if torch.is_tensor(idx):
         idx = idx.tolist()
-        
+    
     text = concat_table_values(data[idx])[:-1].strip()
     encoded_inputs = tokenizer.encode(text, return_tensors='pt', padding=True)
     # decoded_inputs = [self.tokenizer.decode(i) for i in encoded_inputs]
@@ -96,10 +96,10 @@ def getitem_text_to_label(idx, data, tokenizer, max_encoded_len, classes=None, f
 
 def getitem_text_to_text(idx, data, tokenizer, max_encoded_len, classes, features):
     task = 'multilabel classification:'
-    
+        
     features_numeric = data[idx].tolist()[:-1]
     features_full = [f"{feature} {features_numeric[idx]}" for idx, feature in enumerate(features())]
-    features_full = [f"{feature} {int(features_numeric[idx] * 10)}" for idx, feature in enumerate(features())]
+#     features_full = [f"{feature} {int(features_numeric[idx] * 10)}" for idx, feature in enumerate(features())]
     features_full = [task] + features_full
     text = '  '.join(features_full)
 
@@ -116,8 +116,13 @@ def getitem_text_to_text(idx, data, tokenizer, max_encoded_len, classes, feature
     encoded_inputs_ids = encoded_inputs['input_ids'].squeeze()
     attention_mask_inputs = encoded_inputs['attention_mask'].squeeze()
 
-    label_numeric = data[idx].tolist()[-1:]
-    outputs = classes()[int(label_numeric[0])]
+    label_numeric = data[idx].tolist()[-1:][0]
+  
+    if type(label_numeric) == str:
+        outputs = label_numeric.strip()
+    else:        
+        outputs = classes()[int(label_numeric)]
+        
         
     encoded_outputs = tokenizer.encode_plus(
         outputs,
@@ -168,25 +173,6 @@ class BaseDataset(Dataset):
 
     def max_min_column(self, col):
         return max([row[col] for row in self.data]), min([row[col] for row in self.data])
-
-
-# class TextLabelDataset(BaseDataset, ABC):
-#     def __getitem__(self, idx):
-#         super().__getitem__(idx)
-#         if torch.is_tensor(idx):
-#             idx = idx.tolist()
-#         text = self.build_input_fn(self.data[idx])[:-1].strip()
-#         encoded_inputs = self.tokenizer.encode(text, return_tensors='pt', padding=True)
-#         # decoded_inputs = [self.tokenizer.decode(i) for i in encoded_inputs]
-#         encoded_inputs = torch.reshape(encoded_inputs, (-1,))
-#         encoded_inputs = _normalizer(encoded_inputs, max_len=self.max_encoded_len)
-#         outputs = torch.tensor(self.classes()[self.data[idx][-1].strip()], dtype=torch.long)
-
-#         return encoded_inputs, outputs
-
-#     def classes(self):
-#         raise NotImplementedError
-
     
     
 ########## ------------ DATASETS CLASSES ------------ ##########
@@ -371,8 +357,8 @@ class AdultT5Dataset(BaseDataset):
 
     def classes(self):
         return {
-            " <=50K": 0,
-            " >50K": 1
+            0: " <=50K",
+            1: " >50K"
         }
     
     def features(self):
@@ -392,6 +378,8 @@ class AdultT5Dataset(BaseDataset):
             'hours-per-week',
             'native-country'
         ]
+    
+    
 
 
 ### --- PULSAR --- ###
