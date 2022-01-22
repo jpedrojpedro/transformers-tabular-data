@@ -6,6 +6,7 @@ from torch.nn.functional import one_hot
 from torch import nn
 from torch import optim
 import torchmetrics as tm
+from torchmetrics.functional import f1
 
 
 def model_state_path(model_prefix, log=False) -> Path:
@@ -54,9 +55,10 @@ class TrainAndValidate:
         for epoch in range(self.num_epochs):
             self.logging('Epoch {}/{}'.format(epoch + 1, self.num_epochs))
             self.logging('-' * 10)
-            
+
             len_total = 0
             loss_total = 0.0
+            f1_total = 0.0
             for inputs, labels in self.data_train:
                 len_total += len(inputs)
                 if self.model_prefix == 't5':
@@ -70,7 +72,7 @@ class TrainAndValidate:
                     loss = full_outputs.loss
                     y_true_one_hot = labels['encoded_outputs_ids']
                     loss_total += loss.item() * inputs['encoded_inputs_ids'].size(0)
-                
+
                 else:
                     y_pred = self.model(inputs.long()).logits
 
@@ -81,28 +83,31 @@ class TrainAndValidate:
                     loss_total += loss.item() * len(inputs)
 
                 self.train_acc(y_pred, y_true_one_hot.int())
+                f1_score = f1(y_pred, y_true_one_hot.int(), self.num_classes)
+                f1_total += f1_score
                 # Backward pass
                 loss.backward()
                 self.optimizer.step()
 
             epoch_acc = self.train_acc.compute()            
             epoch_loss = loss_total / len_total
-            
-            self.logging('Train Loss: {:.4f} Acc: {:.4f}'.format(epoch_loss, epoch_acc))
+            epoch_f1 = f1_total / len_total
+
+            self.logging('Train Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(epoch_loss, epoch_acc, epoch_f1))
             self.logging('')
-        
+
         # Total time
         time_elapsed = time.time() - since
         self.logging('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
         self.persist_model()
 
-        
+
     def validate(self, model_state='20211130-201153_state.pt'):
         self.load_model(model_state)
         since = time.time()
         print('Starting test')
         print('-' * 10)
-        
+
         loss_total = 0.0
         len_total = 0
         for inputs, labels in self.data_test:
@@ -123,15 +128,15 @@ class TrainAndValidate:
                 loss_total += loss.item() * inputs['encoded_inputs_ids'].size(0)
             else:
                 y_pred = self.model(inputs.long()).logits
-                
+
                 y_true_one_hot = one_hot(labels, num_classes=self.num_classes)
                 y_true_one_hot = torch.squeeze(y_true_one_hot).float()
-                
+
                 loss = self.loss_fn(y_pred, y_true_one_hot)
                 loss_total += loss.item() * len(inputs)
-            
+
             self.val_acc(y_pred, y_true_one_hot.int())
-        
+
         final_acc = self.val_acc.compute()
         final_loss = loss_total / len_total
         print('Validation Loss: {:.4f} Acc: {:.4f}'.format(final_loss, final_acc))
@@ -139,7 +144,7 @@ class TrainAndValidate:
         time_elapsed = time.time() - since
         print('Validation complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 
-        
+
     ########## ------------ FUNCTIONS FOR LOGGING RESULTS ------------ ##########
 
     def _set_model_prefix(self):
