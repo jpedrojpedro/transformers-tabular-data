@@ -83,8 +83,11 @@ class TrainAndValidate:
                     loss_total += loss.item() * len(inputs)
 
                 self.train_acc(y_pred, y_true_one_hot.int())
-                f1_score = f1(y_pred, y_true_one_hot.int(), self.num_classes)
-                f1_total += f1_score
+                
+                if self.model_prefix != 't5':
+                    f1_score = f1(y_pred, y_true_one_hot.int(), self.num_classes)
+                    f1_total += f1_score * len(inputs)
+
                 # Backward pass
                 loss.backward()
                 self.optimizer.step()

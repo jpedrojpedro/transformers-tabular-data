@@ -3,7 +3,7 @@ from pathlib import Path
 from datasets import *
 from loader import SimpleDataLoaderBuilder
 from train import TrainAndValidate
-from models import load_bert, load_t5, load_gpt2
+from models import *
 
 
 def select_process_combination():
@@ -42,7 +42,10 @@ def main():
     datasets_folder = Path(__file__).parent.parent / "datasets"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    perc = 1 # percentil of data in training_set
+    # percentil of data in training_set
+    percentils = (1, 10, 80) 
+    perc = percentils[0]
+    print('{}% training set'.format(perc))
     
     if dataset == 'iris text-to-label':
         train_string = "iris_train_perc" + str(perc) + ".csv"
@@ -101,7 +104,7 @@ def main():
     else:
         raise ModuleNotFoundError("Invalid Model selection")
 
-    model_ft, tokenizer = model_fn(ds_train.num_classes(), freeze=True)
+    model_ft, tokenizer = model_fn(ds_train.num_classes(), freeze=2)
     ds_train.tokenizer = tokenizer
     ds_test.tokenizer = tokenizer
     data_loader = SimpleDataLoaderBuilder(ds_train, ds_test)

@@ -47,7 +47,7 @@ def create_intervals(aux, col_min, col_max, col_names):
 
 
 def concat_table_values(table_data, delimiter='  '):
-    # aux = [str(int(round(float(i), 2)*10)) for i in table_data]
+#     aux = [str(int(round(float(i), 2)*10)) for i in table_data]
     aux = [str(i) for i in table_data]
 
     # col_min = [43, 20, 10, 1]
@@ -79,10 +79,14 @@ def getitem_text_to_label(idx, data, tokenizer, max_encoded_len, classes=None, f
         idx = idx.tolist()
     
     text = concat_table_values(data[idx])[:-1].strip()
+#     print('\n\nText:', text)
     encoded_inputs = tokenizer.encode(text, return_tensors='pt', padding=True)
-    # decoded_inputs = [self.tokenizer.decode(i) for i in encoded_inputs]
+#     print('Encoded', encoded_inputs)
+    decoded_inputs = [tokenizer.decode(i) for i in encoded_inputs]
+#     print('Decoded:', decoded_inputs)
     encoded_inputs = torch.reshape(encoded_inputs, (-1,))
     encoded_inputs = _normalizer(encoded_inputs, max_len=max_encoded_len)
+#     print('Normalized:', encoded_inputs)
     if classes:
         try:
             outputs = torch.tensor(classes()[data[idx][-1].strip()], dtype=torch.long)

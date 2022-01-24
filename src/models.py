@@ -1,7 +1,7 @@
 from torch import nn
 
 
-def load_roberta(num_classes):
+def load_roberta(num_classes, freeze=0):
     from transformers import RobertaForSequenceClassification, RobertaConfig, RobertaTokenizer
 
     config = RobertaConfig.from_pretrained('roberta-base')
@@ -13,7 +13,7 @@ def load_roberta(num_classes):
     return model_ft, tokenizer
 
 
-def load_bert(num_classes, freeze=False):
+def load_bert(num_classes, freeze=0):
     from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 
     model_name = 'distilbert-base-uncased-finetuned-sst-2-english'
@@ -22,23 +22,39 @@ def load_bert(num_classes, freeze=False):
     num_ftrs = model_ft.classifier.in_features
     model_ft.classifier = nn.Linear(num_ftrs, num_classes)
     model_ft.dropout = nn.Identity()
-    if freeze:
+    
+    if freeze == 1:
         # freezing all parameters
         for param in model_ft.parameters():
             param.requires_grad = False
-        # activating specific layers
+        # activating first layers
+        model_ft.distilbert.embeddings.word_embeddings.requires_grad_(True)
+        model_ft.distilbert.embeddings.position_embeddings.requires_grad_(True)
+        model_ft.distilbert.embeddings.LayerNorm.requires_grad_(True)
+        # activating layer norm layers
         for i in range(6):
             model_ft.distilbert.transformer.layer[i].sa_layer_norm.requires_grad_(True)
-            model_ft.distilbert.transformer.layer[i].ffn.dropout.requires_grad_(True)
-            model_ft.distilbert.transformer.layer[i].ffn.lin1.requires_grad_(True)
-            model_ft.distilbert.transformer.layer[i].ffn.lin2.requires_grad_(True)
             model_ft.distilbert.transformer.layer[i].output_layer_norm.requires_grad_(True)
+#             model_ft.distilbert.transformer.layer[i].ffn.lin1.requires_grad_(True)
+#             model_ft.distilbert.transformer.layer[i].ffn.lin2.requires_grad_(True)
+#         model_ft.pre_classifier.requires_grad_(True)
+        # activating last layer - classifier
         model_ft.classifier.requires_grad_(True)
-        model_ft.dropout.requires_grad_(True)
+    
+    elif freeze == 2:
+        # freezing all parameters
+        for param in model_ft.parameters():
+            param.requires_grad = False
+        # activating embedding layers
+        model_ft.distilbert.embeddings.word_embeddings.requires_grad_(True)
+        model_ft.distilbert.embeddings.position_embeddings.requires_grad_(True)
+        # activating last layer - classifier
+        model_ft.classifier.requires_grad_(True)
+    
     return model_ft, tokenizer
 
 
-def load_t5(num_classes, freeze=False):
+def load_t5(num_classes, freeze=0):
     from transformers import T5Tokenizer, T5ForConditionalGeneration
 
     model_name = 't5-small'
@@ -46,20 +62,34 @@ def load_t5(num_classes, freeze=False):
     tokenizer = T5Tokenizer.from_pretrained(model_name)
     # num_ftrs = model_ft.lm_head.in_features
     # model_ft.lm_head = nn.Linear(num_ftrs, num_classes)
-    # if freeze:
-    #     # freezing all parameters
-    #     for param in model_ft.parameters():
-    #         param.requires_grad = False
-    #     # activating specific layers
-    #     for i in range(6):
-    #         for j in range(3):
-    #             model_ft.decoder.block[i].layer[j].layer_norm.requires_grad_(True)
-    #             model_ft.decoder.block[i].layer[j].dropout.requires_grad_(True)
-    #     model_ft.lm_head.requires_grad_(True)
+    
+    if freeze == 1:
+        # freezing all parameters
+        for param in model_ft.parameters():
+            param.requires_grad = False
+        # activating encoder layer norm layers
+        for i in range(6):
+            for j in range(2):
+                model_ft.encoder.block[i].layer[j].layer_norm.requires_grad_(True)
+        # activating decoder layer norm layers
+        for i in range(6):
+            for j in range(3):
+                model_ft.decoder.block[i].layer[j].layer_norm.requires_grad_(True)
+        model_ft.decoder.final_layer_norm.requires_grad_(True)
+        # activating last layer - classifier
+        model_ft.lm_head.requires_grad_(True)
+        
+    elif freeze == 2:
+        # freezing all parameters
+        for param in model_ft.parameters():
+            param.requires_grad = False
+        # activating last layer - classifier
+        model_ft.lm_head.requires_grad_(True)
+    
     return model_ft, tokenizer
 
 
-def load_t0(num_classes, freeze=False):
+def load_t0(num_classes, freeze=0):
     from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
     model_name = 'bigscience/T0_3B'
@@ -67,7 +97,8 @@ def load_t0(num_classes, freeze=False):
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     num_ftrs = model_ft.lm_head.in_features
     model_ft.lm_head = nn.Linear(num_ftrs, num_classes)
-    if freeze:
+    
+    if freeze == 1:
         # freezing all parameters
         for param in model_ft.parameters():
             param.requires_grad = False
@@ -75,14 +106,21 @@ def load_t0(num_classes, freeze=False):
         for i in range(24):
             for j in range(3):
                 model_ft.decoder.block[i].layer[j].layer_norm.requires_grad_(True)
-                model_ft.decoder.block[i].layer[j].dropout.requires_grad_(True)
         model_ft.decoder.final_layer_norm.requires_grad_(True)
-        model_ft.decoder.dropout.requires_grad_(True)
         model_ft.lm_head.requires_grad_(True)
+    
+    elif freeze == 2:
+        # freezing all parameters
+        for param in model_ft.parameters():
+            param.requires_grad = False
+        # activating specific layers
+        model_ft.lm_head.requires_grad_(True)
+
+    
     return model_ft, tokenizer
 
 
-def load_gpt2(num_classes, freeze=False):
+def load_gpt2(num_classes, freeze=0):
     from transformers import GPT2Tokenizer, GPT2ForSequenceClassification, GPT2Config
 
     model_name = 'gpt2-medium'
@@ -103,22 +141,37 @@ def load_gpt2(num_classes, freeze=False):
     # model_ft.resize_token_embeddings(len(tokenizer))
     model_ft.config.pad_token_id = model_ft.config.eos_token_id
 
-    if freeze:
+    if freeze == 1:
         # freezing all parameters
         for param in model_ft.parameters():
             param.requires_grad = False
-        # activating specific layers
+        # activating embedding layers
         model_ft.transformer.wte.requires_grad_(True)
         model_ft.transformer.wpe.requires_grad_(True)
+        # activating layer norm layers
         for i in range(24):
             model_ft.transformer.h[i].ln_1.requires_grad_(True)
             model_ft.transformer.h[i].ln_2.requires_grad_(True)
         model_ft.transformer.ln_f.requires_grad_(True)
+        # activating last layer - classifier
         model_ft.score.requires_grad_(True)
         
-#         for name, layer in model_ft.named_parameters():
-#             print(name)
-#             print(layer.requires_grad)
-#         exit()
+    elif freeze == 2:
+        # freezing all parameters
+        for param in model_ft.parameters():
+            param.requires_grad = False
+            
+        # activating embedding layers
+        model_ft.transformer.wte.requires_grad_(True)
+        model_ft.transformer.wpe.requires_grad_(True)
+        
+        # activating last layer - classifier
+        model_ft.score.requires_grad_(True)
+        
+#     # printing model layers and 'trainable' parameter
+#     for name, layer in model_ft.named_parameters():
+#         print(name)
+#         print(layer.requires_grad)
+#     exit()
         
     return model_ft, tokenizer
