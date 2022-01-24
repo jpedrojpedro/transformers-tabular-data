@@ -1,7 +1,7 @@
 from torch import nn
 
 
-def load_roberta(num_classes, freeze=0):
+def load_roberta(num_classes, freeze='ft'):
     from transformers import RobertaForSequenceClassification, RobertaConfig, RobertaTokenizer
 
     config = RobertaConfig.from_pretrained('roberta-base')
@@ -13,7 +13,7 @@ def load_roberta(num_classes, freeze=0):
     return model_ft, tokenizer
 
 
-def load_bert(num_classes, freeze=0):
+def load_bert(num_classes, freeze='ft'):
     from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 
     model_name = 'distilbert-base-uncased-finetuned-sst-2-english'
@@ -23,7 +23,7 @@ def load_bert(num_classes, freeze=0):
     model_ft.classifier = nn.Linear(num_ftrs, num_classes)
     model_ft.dropout = nn.Identity()
     
-    if freeze == 1:
+    if freeze == 'norm':
         # freezing all parameters
         for param in model_ft.parameters():
             param.requires_grad = False
@@ -41,7 +41,7 @@ def load_bert(num_classes, freeze=0):
         # activating last layer - classifier
         model_ft.classifier.requires_grad_(True)
     
-    elif freeze == 2:
+    elif freeze == 'linear':
         # freezing all parameters
         for param in model_ft.parameters():
             param.requires_grad = False
@@ -54,7 +54,7 @@ def load_bert(num_classes, freeze=0):
     return model_ft, tokenizer
 
 
-def load_t5(num_classes, freeze=0):
+def load_t5(num_classes, freeze='ft'):
     from transformers import T5Tokenizer, T5ForConditionalGeneration
 
     model_name = 't5-small'
@@ -63,7 +63,7 @@ def load_t5(num_classes, freeze=0):
     # num_ftrs = model_ft.lm_head.in_features
     # model_ft.lm_head = nn.Linear(num_ftrs, num_classes)
     
-    if freeze == 1:
+    if freeze == 'norm':
         # freezing all parameters
         for param in model_ft.parameters():
             param.requires_grad = False
@@ -79,7 +79,7 @@ def load_t5(num_classes, freeze=0):
         # activating last layer - classifier
         model_ft.lm_head.requires_grad_(True)
         
-    elif freeze == 2:
+    elif freeze == 'linear':
         # freezing all parameters
         for param in model_ft.parameters():
             param.requires_grad = False
@@ -89,7 +89,7 @@ def load_t5(num_classes, freeze=0):
     return model_ft, tokenizer
 
 
-def load_t0(num_classes, freeze=0):
+def load_t0(num_classes, freeze='ft'):
     from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
     model_name = 'bigscience/T0_3B'
@@ -98,7 +98,7 @@ def load_t0(num_classes, freeze=0):
     num_ftrs = model_ft.lm_head.in_features
     model_ft.lm_head = nn.Linear(num_ftrs, num_classes)
     
-    if freeze == 1:
+    if freeze == 'norm':
         # freezing all parameters
         for param in model_ft.parameters():
             param.requires_grad = False
@@ -109,18 +109,17 @@ def load_t0(num_classes, freeze=0):
         model_ft.decoder.final_layer_norm.requires_grad_(True)
         model_ft.lm_head.requires_grad_(True)
     
-    elif freeze == 2:
+    elif freeze == 'linear':
         # freezing all parameters
         for param in model_ft.parameters():
             param.requires_grad = False
         # activating specific layers
         model_ft.lm_head.requires_grad_(True)
 
-    
     return model_ft, tokenizer
 
 
-def load_gpt2(num_classes, freeze=0):
+def load_gpt2(num_classes, freeze='ft'):
     from transformers import GPT2Tokenizer, GPT2ForSequenceClassification, GPT2Config
 
     model_name = 'gpt2-medium'
@@ -141,7 +140,7 @@ def load_gpt2(num_classes, freeze=0):
     # model_ft.resize_token_embeddings(len(tokenizer))
     model_ft.config.pad_token_id = model_ft.config.eos_token_id
 
-    if freeze == 1:
+    if freeze == 'norm':
         # freezing all parameters
         for param in model_ft.parameters():
             param.requires_grad = False
@@ -156,7 +155,7 @@ def load_gpt2(num_classes, freeze=0):
         # activating last layer - classifier
         model_ft.score.requires_grad_(True)
         
-    elif freeze == 2:
+    elif freeze == 'linear':
         # freezing all parameters
         for param in model_ft.parameters():
             param.requires_grad = False

@@ -104,7 +104,8 @@ def main():
     else:
         raise ModuleNotFoundError("Invalid Model selection")
 
-    model_ft, tokenizer = model_fn(ds_train.num_classes(), freeze=2)
+    # freeze options: 'ft', 'norm' or 'linear'
+    model_ft, tokenizer = model_fn(ds_train.num_classes(), freeze='norm')
     ds_train.tokenizer = tokenizer
     ds_test.tokenizer = tokenizer
     data_loader = SimpleDataLoaderBuilder(ds_train, ds_test)
