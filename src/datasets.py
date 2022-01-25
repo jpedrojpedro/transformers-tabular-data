@@ -383,8 +383,6 @@ class AdultT5Dataset(BaseDataset):
             'native-country'
         ]
     
-    
-
 
 ### --- PULSAR --- ###
     
@@ -434,3 +432,59 @@ class PulsarT5Dataset(BaseDataset):
             ' Skewness of the DM-SNR curve'
         ]
 
+    
+### --- NURSERY --- ###
+
+class NurseryConcatDataset(BaseDataset):
+    def __init__(self,
+                 src_file,
+                 device,
+                 getitem_fn=getitem_text_to_label,
+                 max_encoded_len=32
+                 ):
+        super().__init__(getitem_fn, src_file, device, max_encoded_len)
+
+        self.features = None
+        
+    def classes(self):
+        return {
+            "not_recom": 0,
+            "priority": 1,
+            "spec_prior": 2
+        }
+    
+    def name(self):
+        return 'nursery-concat'
+
+    
+class NurseryT5Dataset(BaseDataset):
+    def __init__(self,
+                 src_file,
+                 device,
+                 getitem_fn=getitem_text_to_text,
+                 max_encoded_len=64
+                 ):
+        super().__init__(getitem_fn, src_file, device, max_encoded_len)
+
+    def name(self):
+        return 'nursery-t5'
+
+
+    def classes(self):
+        return {
+            0: "not_recom",
+            1: "priority",
+            2: "spec_prior"
+        }
+    
+    def features(self):
+        return [
+            'parents', 
+            'has_nurs', 
+            'form', 
+            'children', 
+            'housing', 
+            'finance',
+            'social', 
+            'health', 
+        ]

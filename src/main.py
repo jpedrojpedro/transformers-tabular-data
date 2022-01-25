@@ -12,17 +12,20 @@ def select_process_combination():
         2: ("bert", "abalone text-to-label"),
         3: ("bert", "adult text-to-label"),
         4: ("bert", "pulsar text-to-label"),
+        5: ("bert", "nursery text-to-label"),
 
-        5: ("t5", "iris text-to-text"),
-        6: ("t5", "abalone text-to-text"),
-        7: ("t5", "adult text-to-text"),
-        8: ("t5", "pulsar text-to-text"),
+        11: ("t5", "iris text-to-text"),
+        12: ("t5", "abalone text-to-text"),
+        13: ("t5", "adult text-to-text"),
+        14: ("t5", "pulsar text-to-text"),
+        15: ("t5", "nursery text-to-text"),
         
-        9: ("gpt2", "iris text-to-label"),
-        10: ("gpt2", "abalone text-to-label"),
-        11: ("gpt2", "adult text-to-label"),
-        12: ("gpt2", "pulsar text-to-label"),
-        
+        21: ("gpt2", "iris text-to-label"),
+        22: ("gpt2", "abalone text-to-label"),
+        23: ("gpt2", "adult text-to-label"),
+        24: ("gpt2", "pulsar text-to-label"),
+        25: ("gpt2", "nursery text-to-label"),
+                
         99: ("exit", "exit"),
     }
     print("What combination do you want?")
@@ -44,7 +47,7 @@ def main():
     
     # percentil of data in training_set
     percentils = (1, 10, 80) 
-    perc = percentils[0]
+    perc = percentils[1]
     print('{}% training set'.format(perc))
     
     if dataset == 'iris text-to-label':
@@ -91,6 +94,17 @@ def main():
         ds_train = PulsarT5Dataset(datasets_folder / "pulsar" / str(perc) / train_string, device)
         test_string = "pulsar_test_perc" + str(perc) + ".csv"
         ds_test = PulsarT5Dataset(datasets_folder / "pulsar" / str(perc) / test_string, device)
+        
+    elif dataset == 'nursery text-to-label':
+        train_string = "nursery_train_perc" + str(perc) + ".csv"
+        ds_train = NurseryConcatDataset(datasets_folder / "nursery" / str(perc) / train_string, device)
+        test_string = "nursery_test_perc" + str(perc) + ".csv"
+        ds_test = NurseryConcatDataset(datasets_folder / "nursery" / str(perc) / test_string, device)
+    elif dataset == 'nursery text-to-text':
+        train_string = "nursery_train_perc" + str(perc) + ".csv"
+        ds_train = NurseryT5Dataset(datasets_folder / "nursery" / str(perc) / train_string, device)
+        test_string = "nursery_test_perc" + str(perc) + ".csv"
+        ds_test = NurseryT5Dataset(datasets_folder / "nursery" / str(perc) / test_string, device)
         
     else:
         raise FileNotFoundError("Invalid Dataset selection")
