@@ -450,7 +450,9 @@ class NurseryConcatDataset(BaseDataset):
         return {
             "not_recom": 0,
             "priority": 1,
-            "spec_prior": 2
+            "recommend": 2,
+            "spec_prior": 3,
+            "very_recom": 4
         }
     
     def name(self):
@@ -474,7 +476,9 @@ class NurseryT5Dataset(BaseDataset):
         return {
             0: "not_recom",
             1: "priority",
-            2: "spec_prior"
+            2: "recommend",
+            3: "spec_prior",
+            4: "very_recom"
         }
     
     def features(self):
