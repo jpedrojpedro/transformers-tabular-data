@@ -127,12 +127,13 @@ def main():
     data_loader.build()
     tv = TrainAndValidate(data_loader, model_ft, device, num_epochs=50, learning_rate=1e-5)
     
-    print(torch.cuda.is_available())
-    print(torch.cuda.current_device())
+    print('\nGPU:', torch.cuda.is_available())
+    print('Device:', torch.cuda.current_device())
     print(torch.cuda.get_device_name(0))
+    print('\n')
     
     tv.train()
-#     tv.validate(model_state='20220119-020420-iris-concat.pt')
+#     tv.validate(model_state='20220125-195921-iris-t5.pt')
 
 
 if __name__ == '__main__':

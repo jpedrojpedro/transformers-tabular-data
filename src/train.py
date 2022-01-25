@@ -6,7 +6,7 @@ from torch.nn.functional import one_hot
 from torch import nn
 from torch import optim
 import torchmetrics as tm
-from torchmetrics.functional import f1
+from torchmetrics.functional import f1, recall
 
 
 def model_state_path(model_prefix, log=False) -> Path:
@@ -60,6 +60,7 @@ class TrainAndValidate:
             len_total = 0
             loss_total = 0.0
             f1_total = 0.0
+            recall_total = 0.0
             for inputs, labels in self.data_train:
                 len_total += len(inputs)
                 if self.model_prefix == 't5':                    
@@ -70,8 +71,9 @@ class TrainAndValidate:
                         decoder_attention_mask=labels['attention_mask_outputs'],
                     )
                     y_pred = torch.argmax(full_outputs.logits, dim=2)
-                    loss = full_outputs.loss
                     y_true_one_hot = labels['encoded_outputs_ids']
+                    
+                    loss = full_outputs.loss
                     loss_total += loss.item() * inputs['encoded_inputs_ids'].size(0)
 
                 else:
@@ -79,18 +81,18 @@ class TrainAndValidate:
 
                     y_true_one_hot = one_hot(labels, num_classes=self.num_classes)
                     y_true_one_hot = y_true_one_hot.float()
-#                     y_true_one_hot = torch.squeeze(y_true_one_hot).float()
 
                     loss = self.loss_fn(y_pred, y_true_one_hot)
-                    
                     loss_total += loss.item() * len(inputs)
-                
                     
                 self.train_acc(y_pred, y_true_one_hot.int())
                 
                 if self.model_prefix != 't5':
                     f1_score = f1(y_pred, y_true_one_hot.int(), self.num_classes)
                     f1_total += f1_score * len(inputs)
+                    
+                    recall_score = recall(y_pred, y_true_one_hot.int(), average='macro', num_classes=self.num_classes)
+                    recall_total += recall_score * len(inputs)
 
                 # Backward pass
                 loss.backward()
@@ -99,8 +101,9 @@ class TrainAndValidate:
             epoch_acc = self.train_acc.compute()            
             epoch_loss = loss_total / len_total
             epoch_f1 = f1_total / len_total
+            epoch_recall = recall_total / len_total
 
-            self.logging('Train Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(epoch_loss, epoch_acc, epoch_f1))
+            self.logging('Train Loss: {:.4f} Acc: {:.4f} F1: {:.4f} Recall: {:.4f}'.format(epoch_loss, epoch_acc, epoch_f1, epoch_recall))
             self.logging('')
         
         # Total time
@@ -126,19 +129,16 @@ class TrainAndValidate:
                     labels=labels['encoded_outputs_ids'],
                     decoder_attention_mask=labels['attention_mask_outputs'],
                 )
-                outputs = full_outputs.logits
+                y_pred = full_outputs.logits
+                y_true_one_hot = one_hot( labels['encoded_outputs_ids'], num_classes=y_pred.size(2) )
+                
                 loss = full_outputs.loss
-                y_true_one_hot = one_hot(
-                    labels['encoded_outputs_ids'],
-                    num_classes=outputs.size(2)
-                )
                 loss_total += loss.item() * inputs['encoded_inputs_ids'].size(0)
             else:
                 y_pred = self.model(inputs.long()).logits
-
                 y_true_one_hot = one_hot(labels, num_classes=self.num_classes)
-                y_true_one_hot = torch.squeeze(y_true_one_hot).float()
-
+                y_true_one_hot = y_true_one_hot.float()
+                
                 loss = self.loss_fn(y_pred, y_true_one_hot)
                 loss_total += loss.item() * len(inputs)
 
