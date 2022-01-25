@@ -26,6 +26,7 @@ class TrainAndValidate:
     def __init__(self,
                  data_loader,
                  model,
+                 device,
                  loss_fn=nn.CrossEntropyLoss,
                  opt_fn=optim.Adam,
                  acc_fn=tm.Accuracy,
@@ -33,7 +34,7 @@ class TrainAndValidate:
                  scheduler_step_size=25,
                  scheduler_factor=0.1,
                  num_epochs=75,
-                 learning_rate=1e-5
+                 learning_rate=1e-5,
                  ):
         self.data_loader = data_loader
         self.data_train = self.data_loader.loader_train
@@ -43,25 +44,25 @@ class TrainAndValidate:
         self._set_model_prefix()
         self.loss_fn = loss_fn()
         self.optimizer = opt_fn(model.parameters(), lr=learning_rate)
-        self.train_acc = acc_fn()
-        self.val_acc = acc_fn()
+        self.train_acc = acc_fn().to(device)
+        self.val_acc = acc_fn().to(device)
         self.scheduler = scheduler(self.optimizer, step_size=scheduler_step_size, gamma=scheduler_factor)
         self.num_epochs = num_epochs
         self.train_log_file = None
 
         
     def train(self):
-        since = time.time()
+        since = time.time()        
         for epoch in range(self.num_epochs):
             self.logging('Epoch {}/{}'.format(epoch + 1, self.num_epochs))
             self.logging('-' * 10)
-
+            
             len_total = 0
             loss_total = 0.0
             f1_total = 0.0
             for inputs, labels in self.data_train:
                 len_total += len(inputs)
-                if self.model_prefix == 't5':
+                if self.model_prefix == 't5':                    
                     full_outputs = self.model(
                         input_ids=inputs['encoded_inputs_ids'],
                         attention_mask=inputs['attention_mask_inputs'],
@@ -79,11 +80,12 @@ class TrainAndValidate:
                     y_true_one_hot = one_hot(labels, num_classes=self.num_classes)
                     y_true_one_hot = y_true_one_hot.float()
 #                     y_true_one_hot = torch.squeeze(y_true_one_hot).float()
-            
+
                     loss = self.loss_fn(y_pred, y_true_one_hot)
                     
                     loss_total += loss.item() * len(inputs)
-
+                
+                    
                 self.train_acc(y_pred, y_true_one_hot.int())
                 
                 if self.model_prefix != 't5':
@@ -100,7 +102,7 @@ class TrainAndValidate:
 
             self.logging('Train Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(epoch_loss, epoch_acc, epoch_f1))
             self.logging('')
-
+        
         # Total time
         time_elapsed = time.time() - since
         self.logging('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))

@@ -43,11 +43,11 @@ def main():
         return
 
     datasets_folder = Path(__file__).parent.parent / "datasets"
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     
     # percentil of data in training_set
     percentils = (1, 10, 80) 
-    perc = percentils[1]
+    perc = percentils[0]
     print('{}% training set'.format(perc))
     
     if dataset == 'iris text-to-label':
@@ -120,11 +120,17 @@ def main():
 
     # freeze options: 'ft', 'norm' or 'linear'
     model_ft, tokenizer = model_fn(ds_train.num_classes(), freeze='norm')
+    model_ft.to(device)
     ds_train.tokenizer = tokenizer
     ds_test.tokenizer = tokenizer
     data_loader = SimpleDataLoaderBuilder(ds_train, ds_test)
     data_loader.build()
-    tv = TrainAndValidate(data_loader, model_ft, num_epochs=50, learning_rate=1e-5)
+    tv = TrainAndValidate(data_loader, model_ft, device, num_epochs=50, learning_rate=1e-5)
+    
+    print(torch.cuda.is_available())
+    print(torch.cuda.current_device())
+    print(torch.cuda.get_device_name(0))
+    
     tv.train()
 #     tv.validate(model_state='20220119-020420-iris-concat.pt')
 

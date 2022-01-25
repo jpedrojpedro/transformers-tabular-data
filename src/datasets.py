@@ -74,7 +74,7 @@ def written_form_table_values(table_data, delimiter='  '):
 
 ########## ------------ __getitem__ implementations ------------ ##########
 
-def getitem_text_to_label(idx, data, tokenizer, max_encoded_len, classes=None, features=None):
+def getitem_text_to_label(idx, device, data, tokenizer, max_encoded_len, classes=None, features=None):
     if torch.is_tensor(idx):
         idx = idx.tolist()
     
@@ -94,11 +94,12 @@ def getitem_text_to_label(idx, data, tokenizer, max_encoded_len, classes=None, f
             outputs = torch.tensor(classes()[data[idx][-1]], dtype=torch.long)
     else:
         outputs = torch.tensor(data[idx][-1], dtype=torch.long)
-
+    
+    encoded_inputs, outputs = encoded_inputs.to(device), outputs.to(device)
     return encoded_inputs, outputs
 
 
-def getitem_text_to_text(idx, data, tokenizer, max_encoded_len, classes, features):
+def getitem_text_to_text(idx, device, data, tokenizer, max_encoded_len, classes, features):
     task = 'multilabel classification:'
         
     features_numeric = data[idx].tolist()[:-1]
@@ -117,8 +118,8 @@ def getitem_text_to_text(idx, data, tokenizer, max_encoded_len, classes, feature
         return_tensors='pt'
     )
 
-    encoded_inputs_ids = encoded_inputs['input_ids'].squeeze()
-    attention_mask_inputs = encoded_inputs['attention_mask'].squeeze()
+    encoded_inputs_ids = encoded_inputs['input_ids'].squeeze().to(device)
+    attention_mask_inputs = encoded_inputs['attention_mask'].squeeze().to(device)
 
     label_numeric = data[idx].tolist()[-1:][0]
   
@@ -137,8 +138,8 @@ def getitem_text_to_text(idx, data, tokenizer, max_encoded_len, classes, feature
         return_token_type_ids=False,
         return_tensors='pt'
     )
-    encoded_outputs_ids = encoded_outputs['input_ids'].squeeze()
-    attention_mask_outputs = encoded_outputs['attention_mask'].squeeze()
+    encoded_outputs_ids = encoded_outputs['input_ids'].squeeze().to(device)
+    attention_mask_outputs = encoded_outputs['attention_mask'].squeeze().to(device)
 
     final_inputs = {
         'encoded_inputs_ids': encoded_inputs_ids,
@@ -164,7 +165,7 @@ class BaseDataset(Dataset):
     def __getitem__(self, index):
         if not self.tokenizer:
             raise AssertionError("Tokenizer should be set")
-        return self.getitem_fn(index, self.data, self.tokenizer, self.max_encoded_len, self.classes, self.features)
+        return self.getitem_fn(index, self.device, self.data, self.tokenizer, self.max_encoded_len, self.classes, self.features)
 
     def __len__(self):
         return len(self.data)

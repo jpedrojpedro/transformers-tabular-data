@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 
 
@@ -172,5 +173,5 @@ def load_gpt2(num_classes, freeze='ft'):
 #         print(name)
 #         print(layer.requires_grad)
 #     exit()
-        
+
     return model_ft, tokenizer
