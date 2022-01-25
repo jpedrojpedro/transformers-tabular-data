@@ -77,9 +77,11 @@ class TrainAndValidate:
                     y_pred = self.model(inputs.long()).logits
 
                     y_true_one_hot = one_hot(labels, num_classes=self.num_classes)
-                    y_true_one_hot = torch.squeeze(y_true_one_hot).float()
-
+                    y_true_one_hot = y_true_one_hot.float()
+#                     y_true_one_hot = torch.squeeze(y_true_one_hot).float()
+            
                     loss = self.loss_fn(y_pred, y_true_one_hot)
+                    
                     loss_total += loss.item() * len(inputs)
 
                 self.train_acc(y_pred, y_true_one_hot.int())
