@@ -46,8 +46,9 @@ def main():
     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     
     # percentil of data in training_set
-    percentils = (1, 10, 80) 
-    perc = percentils[0]
+    percentils = (1, 10, 80)
+    # percentils = (1, 10, 100)
+    perc = percentils[2]
     print('{}% training set'.format(perc))
     
     if dataset == 'iris text-to-label':
@@ -57,9 +58,9 @@ def main():
         ds_test = IrisConcatDataset(datasets_folder / "iris" / str(perc) / test_string, device)
     elif dataset == 'iris text-to-text':
         train_string = "iris_train_perc" + str(perc) + ".csv"
-        ds_train = IrisT5Dataset(datasets_folder / "iris" / str(perc) / train_string, device)
-        test_string = "iris_test_perc" + str(perc) + ".csv"
-        ds_test = IrisT5Dataset(datasets_folder / "iris" / str(perc) / test_string, device)
+        ds_train = IrisT5Dataset(datasets_folder / "iris" / "regular" / train_string, device)
+        test_string = "iris_test.csv"
+        ds_test = IrisT5Dataset(datasets_folder / "iris" / "regular" / test_string, device)
         
     elif dataset == 'abalone text-to-label':
         train_string = "abalone_train_perc" + str(perc) + ".csv"
@@ -68,9 +69,9 @@ def main():
         ds_test = AbaloneConcatDataset(datasets_folder / "abalone" / str(perc) / test_string, device)
     elif dataset == 'abalone text-to-text':
         train_string = "abalone_train_perc" + str(perc) + ".csv"
-        ds_train = AbaloneT5Dataset(datasets_folder / "abalone" / str(perc) / train_string, device)
+        ds_train = AbaloneT5Dataset(datasets_folder / "abalone" / "extreme" / str(perc) / train_string, device)
         test_string = "abalone_test_perc" + str(perc) + ".csv"
-        ds_test = AbaloneT5Dataset(datasets_folder / "abalone" / str(perc) / test_string, device)
+        ds_test = AbaloneT5Dataset(datasets_folder / "abalone" / "extreme" / str(perc) / test_string, device)
         
     elif dataset == 'adult text-to-label':
         train_string = "adult_train_perc" + str(perc) + ".csv"
@@ -128,8 +129,9 @@ def main():
     tv = TrainAndValidate(data_loader, model_ft, device, num_epochs=50, learning_rate=1e-5)
     
     print('\nGPU:', torch.cuda.is_available())
-    print('Device:', torch.cuda.current_device())
-    print(torch.cuda.get_device_name(0))
+    if torch.cuda.is_available():
+        print('Device:', torch.cuda.current_device())
+        print(torch.cuda.get_device_name(0))
     print('\n')
     
     tv.train()
