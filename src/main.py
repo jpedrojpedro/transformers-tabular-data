@@ -46,8 +46,8 @@ def main():
     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     
     # percentil of data in training_set
-    percentils = (1, 10, 80)
-    # percentils = (1, 10, 100)
+#     percentils = (1, 10, 80)
+    percentils = (1, 10, 100)
     perc = percentils[2]
     print('{}% training set'.format(perc))
     
@@ -64,14 +64,14 @@ def main():
         
     elif dataset == 'abalone text-to-label':
         train_string = "abalone_train_perc" + str(perc) + ".csv"
-        ds_train = AbaloneConcatDataset(datasets_folder / "abalone" / str(perc) / train_string, device)
-        test_string = "abalone_test_perc" + str(perc) + ".csv"
-        ds_test = AbaloneConcatDataset(datasets_folder / "abalone" / str(perc) / test_string, device)
+        ds_train = AbaloneConcatDataset(datasets_folder / "abalone" / "regular" / train_string, device)
+        test_string = "abalone_test.csv"
+        ds_test = AbaloneConcatDataset(datasets_folder / "abalone" / "regular" / test_string, device)
     elif dataset == 'abalone text-to-text':
         train_string = "abalone_train_perc" + str(perc) + ".csv"
-        ds_train = AbaloneT5Dataset(datasets_folder / "abalone" / "extreme" / str(perc) / train_string, device)
-        test_string = "abalone_test_perc" + str(perc) + ".csv"
-        ds_test = AbaloneT5Dataset(datasets_folder / "abalone" / "extreme" / str(perc) / test_string, device)
+        ds_train = AbaloneT5Dataset(datasets_folder / "abalone" / "regular" / train_string, device)
+        test_string = "abalone_test.csv"
+        ds_test = AbaloneT5Dataset(datasets_folder / "abalone" / "regular" / test_string, device)
         
     elif dataset == 'adult text-to-label':
         train_string = "adult_train_perc" + str(perc) + ".csv"
