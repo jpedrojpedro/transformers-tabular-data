@@ -1,4 +1,5 @@
 import time
+import ipdb
 import torch
 import datetime as dt
 from pathlib import Path
@@ -72,7 +73,7 @@ class TrainAndValidate:
                     )
                     y_pred = torch.argmax(full_outputs.logits, dim=2)
                     y_true_one_hot = labels['encoded_outputs_ids']
-                    
+                    ipdb.set_trace()
                     loss = full_outputs.loss
                     loss_total += loss.item() * inputs['encoded_inputs_ids'].size(0)
 
@@ -85,6 +86,9 @@ class TrainAndValidate:
                     loss = self.loss_fn(y_pred, y_true_one_hot)
                     loss_total += loss.item() * len(inputs)
                     
+                # BERT: acc and loss are calculated the same way
+                # y_pred = [-0.06, 0.984, 0.12]
+                # y_true = [0, 1, 0]
                 self.train_acc(y_pred, y_true_one_hot.int())
                 
                 if self.model_prefix != 't5':
