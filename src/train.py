@@ -1,5 +1,5 @@
 import time
-import ipdb
+# import ipdb
 import torch
 import datetime as dt
 from pathlib import Path
@@ -8,6 +8,7 @@ from torch import nn
 from torch import optim
 import torchmetrics as tm
 from torchmetrics.functional import f1, recall
+from src.metrics import accuracy
 
 
 def model_state_path(model_prefix, log=False) -> Path:
@@ -62,6 +63,7 @@ class TrainAndValidate:
             loss_total = 0.0
             f1_total = 0.0
             recall_total = 0.0
+            acc_total = 0.0
             for inputs, labels in self.data_train:
                 len_total += len(inputs)
                 if self.model_prefix == 't5':                    
@@ -73,24 +75,22 @@ class TrainAndValidate:
                     )
                     y_pred = torch.argmax(full_outputs.logits, dim=2)
                     y_true_one_hot = labels['encoded_outputs_ids']
-                    ipdb.set_trace()
+                    # ipdb.set_trace()
                     loss = full_outputs.loss
                     loss_total += loss.item() * inputs['encoded_inputs_ids'].size(0)
-
+                    acc = self.calculate_acc(y_pred, y_true_one_hot)
+                    acc_total += acc * inputs['encoded_inputs_ids'].size(0)
                 else:
                     y_pred = self.model(inputs.long()).logits
-
                     y_true_one_hot = one_hot(labels, num_classes=self.num_classes)
                     y_true_one_hot = y_true_one_hot.float()
-
                     loss = self.loss_fn(y_pred, y_true_one_hot)
                     loss_total += loss.item() * len(inputs)
-                    
-                # BERT: acc and loss are calculated the same way
-                # y_pred = [-0.06, 0.984, 0.12]
-                # y_true = [0, 1, 0]
-                self.train_acc(y_pred, y_true_one_hot.int())
-                
+                    # BERT: acc and loss are calculated the same way
+                    # y_pred = [-0.06, 0.984, 0.12]
+                    # y_true = [0, 1, 0]
+                    self.train_acc(y_pred, y_true_one_hot.int())
+
                 if self.model_prefix != 't5':
                     f1_score = f1(y_pred, y_true_one_hot.int(), self.num_classes)
                     f1_total += f1_score * len(inputs)
@@ -102,7 +102,7 @@ class TrainAndValidate:
                 loss.backward()
                 self.optimizer.step()
 
-            epoch_acc = self.train_acc.compute()            
+            epoch_acc = self.train_acc.compute() if self.model_prefix != 't5' else acc_total / len_total
             epoch_loss = loss_total / len_total
             epoch_f1 = f1_total / len_total
             epoch_recall = recall_total / len_total
@@ -193,3 +193,9 @@ class TrainAndValidate:
         with open(log_folder / self.train_log_file, 'a') as fp:
             print(msg, file=fp)
             print(msg)
+
+    def calculate_acc(self, y_pred_batch, y_true_batch):
+        fn = self.data_train.dataset.tokenizer.decode
+        y_pred = [fn(p, skip_special_tokens=True) for p in y_pred_batch]
+        y_true = [fn(t, skip_special_tokens=True) for t in y_true_batch]
+        return accuracy(y_true, y_pred)['accuracy']

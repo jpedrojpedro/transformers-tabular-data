@@ -6,3 +6,4 @@ skicit-learn==1.0.1
 transformers==4.12.3
 sentencepiece==0.1.96
 ipdb==0.13.9
+editdistance==0.6.0
