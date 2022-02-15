@@ -100,12 +100,12 @@ def getitem_text_to_label(idx, device, data, tokenizer, max_encoded_len, classes
 
 
 def getitem_text_to_text(idx, device, data, tokenizer, max_encoded_len, classes, features):
-    task = 'multilabel classification:'
+    # task = 'multilabel classification:'
         
     features_numeric = data[idx].tolist()[:-1]
     features_full = [f"{feature} {features_numeric[idx]}" for idx, feature in enumerate(features())]
-#     features_full = [f"{feature} {int(features_numeric[idx] * 10)}" for idx, feature in enumerate(features())]
-    features_full = [task] + features_full
+    # features_full = [f"{feature} {int(features_numeric[idx] * 10)}" for idx, feature in enumerate(features())]
+    # features_full = [task] + features_full
     text = '  '.join(features_full)
 
     encoded_inputs = tokenizer.encode_plus(
@@ -119,7 +119,7 @@ def getitem_text_to_text(idx, device, data, tokenizer, max_encoded_len, classes,
     )
 
     encoded_inputs_ids = encoded_inputs['input_ids'].squeeze().to(device)
-    attention_mask_inputs = encoded_inputs['attention_mask'].squeeze().to(device)
+    # attention_mask_inputs = encoded_inputs['attention_mask'].squeeze().to(device)
 
     label_numeric = data[idx].tolist()[-1:][0]
   
@@ -129,25 +129,25 @@ def getitem_text_to_text(idx, device, data, tokenizer, max_encoded_len, classes,
         outputs = classes()[int(label_numeric)]
         
         
-    encoded_outputs = tokenizer.encode_plus(
-        outputs,
-        max_length=max_encoded_len,
-        padding='max_length',
-        truncation=True,
-        return_attention_mask=True,
-        return_token_type_ids=False,
-        return_tensors='pt'
-    )
-    encoded_outputs_ids = encoded_outputs['input_ids'].squeeze().to(device)
-    attention_mask_outputs = encoded_outputs['attention_mask'].squeeze().to(device)
+    # encoded_outputs = tokenizer.encode_plus(
+    #     outputs,
+    #     max_length=max_encoded_len,
+    #     padding='max_length',
+    #     truncation=True,
+    #     return_attention_mask=True,
+    #     return_token_type_ids=False,
+    #     return_tensors='pt'
+    # )
+    # encoded_outputs_ids = encoded_outputs['input_ids'].squeeze().to(device)
+    # attention_mask_outputs = encoded_outputs['attention_mask'].squeeze().to(device)
 
     final_inputs = {
         'encoded_inputs_ids': encoded_inputs_ids,
-        'attention_mask_inputs': attention_mask_inputs,
+        # 'attention_mask_inputs': attention_mask_inputs,
     }
     final_outpus = {
-        'encoded_outputs_ids': encoded_outputs_ids,
-        'attention_mask_outputs': attention_mask_outputs
+        'encoded_outputs_ids': outputs,
+        # 'attention_mask_outputs': attention_mask_outputs
     }
     return final_inputs, final_outpus
 
@@ -214,11 +214,11 @@ class IrisT5Dataset(BaseDataset):
         return 'iris-t5'
 
     def classes(self):
-        return [
-            'setosa',
-            'versicolour',
-            'virginica',
-        ]
+        return {
+            0: 0,  # 'setosa',
+            1: 1,  # 'versicolour',
+            2: 2,  # 'virginica',
+        }
 
     def features(self):
         return [

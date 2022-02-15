@@ -90,6 +90,41 @@ def load_t5(num_classes, freeze='ft'):
     return model_ft, tokenizer
 
 
+def load_t5_label(num_classes, freeze='ft'):
+    from transformers import T5Tokenizer, T5EncoderModel
+
+    model_name = 't5-small'
+    model_ft = T5EncoderModel.from_pretrained(model_name)
+    tokenizer = T5Tokenizer.from_pretrained(model_name)
+    num_ftrs = model_ft.encoder.block[5].layer[1].DenseReluDense.wo.out_features
+    model_ft.encoder.final_layer_norm = nn.Linear(num_ftrs, num_classes)
+
+    # if freeze == 'norm':
+    #     # freezing all parameters
+    #     for param in model_ft.parameters():
+    #         param.requires_grad = False
+    #     # activating encoder layer norm layers
+    #     for i in range(6):
+    #         for j in range(2):
+    #             model_ft.encoder.block[i].layer[j].layer_norm.requires_grad_(True)
+    #     # activating decoder layer norm layers
+    #     for i in range(6):
+    #         for j in range(3):
+    #             model_ft.decoder.block[i].layer[j].layer_norm.requires_grad_(True)
+    #     model_ft.decoder.final_layer_norm.requires_grad_(True)
+    #     # activating last layer - classifier
+    #     model_ft.lm_head.requires_grad_(True)
+    #
+    # elif freeze == 'linear':
+    #     # freezing all parameters
+    #     for param in model_ft.parameters():
+    #         param.requires_grad = False
+    #     # activating last layer - classifier
+    #     model_ft.lm_head.requires_grad_(True)
+
+    return model_ft, tokenizer
+
+
 def load_t0(num_classes, freeze='ft'):
     from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 

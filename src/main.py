@@ -2,7 +2,8 @@ import torch
 from pathlib import Path
 from datasets import *
 from loader import SimpleDataLoaderBuilder
-from train import TrainAndValidate
+# from train import TrainAndValidate
+from train_t5 import TrainAndValidateT5
 from models import *
 
 
@@ -113,7 +114,7 @@ def main():
     if model == 'bert':
         model_fn = load_bert
     elif model == 't5':
-        model_fn = load_t5
+        model_fn = load_t5_label
     elif model == 'gpt2':
         model_fn = load_gpt2
     else:
@@ -126,8 +127,8 @@ def main():
     ds_test.tokenizer = tokenizer
     data_loader = SimpleDataLoaderBuilder(ds_train, ds_test)
     data_loader.build()
-    tv = TrainAndValidate(data_loader, model_ft, device, num_epochs=50, learning_rate=1e-5)
-    
+    tv = TrainAndValidateT5(data_loader, model_ft, device, num_epochs=50, learning_rate=1e-5)
+
     print('\nGPU:', torch.cuda.is_available())
     if torch.cuda.is_available():
         print('Device:', torch.cuda.current_device())
