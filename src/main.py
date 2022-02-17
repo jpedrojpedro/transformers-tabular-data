@@ -2,7 +2,7 @@ import torch
 from pathlib import Path
 from datasets import *
 from loader import SimpleDataLoaderBuilder
-# from train import TrainAndValidate
+from train import TrainAndValidate
 from train_t5 import TrainAndValidateT5
 from models import *
 
@@ -54,9 +54,9 @@ def main():
     
     if dataset == 'iris text-to-label':
         train_string = "iris_train_perc" + str(perc) + ".csv"
-        ds_train = IrisConcatDataset(datasets_folder / "iris" / str(perc) / train_string, device)
-        test_string = "iris_test_perc" + str(perc) + ".csv"
-        ds_test = IrisConcatDataset(datasets_folder / "iris" / str(perc) / test_string, device)
+        ds_train = IrisConcatDataset(datasets_folder / "iris" / "regular" / train_string, device)
+        test_string = "iris_test.csv"
+        ds_test = IrisConcatDataset(datasets_folder / "iris" / "regular" / test_string, device)
     elif dataset == 'iris text-to-text':
         train_string = "iris_train_perc" + str(perc) + ".csv"
         ds_train = IrisT5Dataset(datasets_folder / "iris" / "regular" / train_string, device)
@@ -128,6 +128,7 @@ def main():
     data_loader = SimpleDataLoaderBuilder(ds_train, ds_test)
     data_loader.build()
     tv = TrainAndValidateT5(data_loader, model_ft, device, num_epochs=50, learning_rate=1e-5)
+    # tv = TrainAndValidate(data_loader, model_ft, device, num_epochs=50, learning_rate=1e-5)
 
     print('\nGPU:', torch.cuda.is_available())
     if torch.cuda.is_available():

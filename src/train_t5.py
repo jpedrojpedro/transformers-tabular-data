@@ -65,7 +65,9 @@ class TrainAndValidateT5:
                     input_ids=inputs['encoded_inputs_ids']
                 )
                 y_pred = outputs.last_hidden_state
+                y_pred = torch.max(y_pred, 1).values
                 y_true_one_hot = one_hot(labels['encoded_outputs_ids'], num_classes=self.num_classes)
+                y_true_one_hot = y_true_one_hot.float()
                 loss = self.loss_fn(y_pred, y_true_one_hot)
                 loss_total += loss.item() * len(inputs)
                 self.train_acc(y_pred, y_true_one_hot.int())
